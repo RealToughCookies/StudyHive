@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>StudyHive · Cheat Sheets</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="app__header">
+        <div class="app__header-top">
+          <div class="app__brand">
+            <img src="StudyHiveLogo.png" alt="StudyHive logo" class="app__logo" />
+            <h1>StudyHive</h1>
+          </div>
+          <button type="button" id="theme-toggle" class="theme-toggle" aria-pressed="false">Dark mode</button>
+        </div>
+        <p class="app__tagline">Stay focused, take breaks, track progress.</p>
+        <nav class="app__nav" aria-label="Primary">
+          <a class="app__nav-link" href="index.html">Focus Timer</a>
+          <a class="app__nav-link" href="courses.html">Courses</a>
+          <a class="app__nav-link" href="notes.html">Notes</a>
+          <a class="app__nav-link app__nav-link--active" href="cheatsheets.html" aria-current="page">Cheat Sheets</a>
+          <a class="app__nav-link" href="games.html">Break Games</a>
+          <a class="app__nav-link" href="quizzes.html">Quizzes</a>
+          <a class="app__nav-link" href="profile.html">Profile</a>
+          <a class="app__nav-link" href="history.html">History</a>
+        </nav>
+      </header>
+
+      <section class="cheatsheets" aria-label="Course cheat sheets">
+        <div class="cheatsheets__header">
+          <h2>Cheat Sheets</h2>
+          <p class="cheatsheets__intro">Blend course goals, topics, and notes into quick study guides.</p>
+        </div>
+        <form id="cheatsheet-form" class="cheatsheet-form">
+          <input type="hidden" id="cheatsheet-id" />
+          <div class="cheatsheet-form__grid">
+            <div class="cheatsheet-form__group">
+              <label for="cheatsheet-title">Title</label>
+              <input type="text" id="cheatsheet-title" placeholder="Unit 3 summary" />
+            </div>
+            <div class="cheatsheet-form__group">
+              <label for="cheatsheet-course-select">Course</label>
+              <select id="cheatsheet-course-select" required>
+                <option value="">Select course…</option>
+              </select>
+            </div>
+          </div>
+          <div class="cheatsheet-form__options">
+            <label class="cheatsheet-option"><input type="checkbox" id="cheatsheet-include-context" checked /> Include course context</label>
+            <label class="cheatsheet-option"><input type="checkbox" id="cheatsheet-include-topics" checked /> Include course topics</label>
+            <label class="cheatsheet-option"><input type="checkbox" id="cheatsheet-include-notes" checked /> Include notes</label>
+          </div>
+          <div class="cheatsheet-form__actions">
+            <button type="submit" class="primary" id="cheatsheet-generate">Generate cheat sheet</button>
+            <button type="button" class="secondary" id="cheatsheet-cancel" hidden>Cancel edit</button>
+          </div>
+          <p id="cheatsheet-feedback" class="cheatsheet-feedback" role="status" aria-live="polite"></p>
+        </form>
+        <div id="cheatsheet-list" class="cheatsheet-list" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

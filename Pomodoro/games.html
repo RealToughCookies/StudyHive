@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>StudyHive · Break Games</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="app__header">
+        <div class="app__header-top">
+          <div class="app__brand">
+            <img src="StudyHiveLogo.png" alt="StudyHive logo" class="app__logo" />
+            <h1>StudyHive</h1>
+          </div>
+          <button type="button" id="theme-toggle" class="theme-toggle" aria-pressed="false">Dark mode</button>
+        </div>
+        <p class="app__tagline">Stay focused, take breaks, track progress.</p>
+        <nav class="app__nav" aria-label="Primary">
+          <a class="app__nav-link" href="index.html">Focus Timer</a>
+          <a class="app__nav-link" href="courses.html">Courses</a>
+          <a class="app__nav-link" href="notes.html">Notes</a>
+          <a class="app__nav-link" href="cheatsheets.html">Cheat Sheets</a>
+          <a class="app__nav-link app__nav-link--active" href="games.html" aria-current="page">Break Games</a>
+          <a class="app__nav-link" href="quizzes.html">Quizzes</a>
+          <a class="app__nav-link" href="history.html">History</a>
+        </nav>
+      </header>
+
+      <section class="games" aria-label="Break games">
+        <div class="games__header">
+          <h2>Break Games</h2>
+          <p class="games__intro">Piece the relay back together between focus sprints. Build modules, send your call, and the story pauses the moment work resumes.</p>
+        </div>
+        <div class="games__availability" id="games-availability" aria-live="polite"></div>
+
+        <article class="game-card adventure-card" id="adventure-game">
+          <header class="game-card__header">
+            <div>
+              <h3>Refraction Relay</h3>
+              <p class="game-card__meta">Salvage, build, and send your distress call—one break at a time.</p>
+            </div>
+            <div class="game-card__actions">
+              <button type="button" class="secondary small" id="adventure-restart">Start fresh</button>
+            </div>
+          </header>
+
+          <div class="adventure-body">
+            <div class="adventure-story" id="adventure-story" aria-live="polite"></div>
+            <div class="adventure-stats" id="adventure-stats"></div>
+          </div>
+
+          <p class="adventure-status" id="adventure-status" aria-live="polite"></p>
+
+          <div class="adventure-choices" id="adventure-choices" role="group" aria-label="Available actions"></div>
+
+          <div class="adventure-log" id="adventure-log" aria-live="polite"></div>
+        </article>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

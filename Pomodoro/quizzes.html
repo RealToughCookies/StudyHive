@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>StudyHive · Quizzes</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="app__header">
+        <div class="app__header-top">
+          <div class="app__brand">
+            <img src="StudyHiveLogo.png" alt="StudyHive logo" class="app__logo" />
+            <h1>StudyHive</h1>
+          </div>
+          <button type="button" id="theme-toggle" class="theme-toggle" aria-pressed="false">Dark mode</button>
+        </div>
+        <p class="app__tagline">Stay focused, take breaks, track progress.</p>
+        <nav class="app__nav" aria-label="Primary">
+          <a class="app__nav-link" href="index.html">Focus Timer</a>
+          <a class="app__nav-link" href="courses.html">Courses</a>
+          <a class="app__nav-link" href="notes.html">Notes</a>
+          <a class="app__nav-link" href="cheatsheets.html">Cheat Sheets</a>
+          <a class="app__nav-link" href="games.html">Break Games</a>
+          <a class="app__nav-link app__nav-link--active" href="quizzes.html" aria-current="page">Quizzes</a>
+          <a class="app__nav-link" href="history.html">History</a>
+        </nav>
+      </header>
+
+      <section class="quiz" aria-label="Quiz generator">
+        <h2>Create Practice Quizzes</h2>
+        <p class="quiz__intro">Paste your notes and generate personalized questions you can revisit later.</p>
+        <form id="quiz-form" class="quiz__form">
+          <div class="quiz__inputs">
+            <div class="quiz__group">
+              <label for="quiz-title">Quiz title</label>
+              <input type="text" id="quiz-title" maxlength="80" placeholder="Optional title" />
+            </div>
+            <div class="quiz__group quiz__group--textarea">
+              <label for="quiz-notes">Notes</label>
+              <textarea id="quiz-notes" rows="6" placeholder="Paste bullet points or a summary..." required></textarea>
+            </div>
+          </div>
+          <div class="quiz__actions">
+            <div class="quiz__group quiz__group--inline">
+              <label for="quiz-question-count">Questions</label>
+              <input type="number" id="quiz-question-count" min="1" max="20" value="5" />
+            </div>
+            <div class="quiz__group quiz__group--inline">
+              <label for="quiz-course-select">Course</label>
+              <select id="quiz-course-select">
+                <option value="">No course selected</option>
+              </select>
+            </div>
+            <button type="submit" class="primary" id="quiz-generate">Generate quiz</button>
+          </div>
+          <fieldset class="quiz__ai" id="quiz-ai-config">
+            <legend>AI Assistance</legend>
+            <label class="quiz__ai-toggle">
+              <input type="checkbox" id="quiz-ai-enabled" />
+              <span>Use an AI model to generate and grade smarter quizzes</span>
+            </label>
+            <p id="quiz-ai-status" class="quiz__ai-status"></p>
+            <div id="quiz-ai-settings" class="quiz__ai-settings" hidden>
+              <div class="quiz__group">
+                <label for="quiz-ai-provider">Provider</label>
+                <select id="quiz-ai-provider">
+                  <option value="openai">OpenAI</option>
+                  <option value="azure-openai">Azure OpenAI</option>
+                  <option value="custom">Custom Compatible Endpoint</option>
+                </select>
+              </div>
+              <div class="quiz__group">
+                <label for="quiz-ai-endpoint">API base URL</label>
+                <input type="url" id="quiz-ai-endpoint" placeholder="https://api.openai.com/v1" />
+              </div>
+              <div class="quiz__group quiz__group--inline">
+                <label for="quiz-ai-model">Model</label>
+                <input type="text" id="quiz-ai-model" placeholder="gpt-4o-mini" />
+              </div>
+              <div class="quiz__group">
+                <label for="quiz-ai-key">API key</label>
+                <input type="password" id="quiz-ai-key" autocomplete="off" placeholder="sk-..." />
+              </div>
+              <div class="quiz__group quiz__group--inline">
+                <label for="quiz-ai-temperature">Creativity</label>
+                <input type="number" id="quiz-ai-temperature" min="0" max="1" step="0.1" value="0.6" />
+              </div>
+              <div class="quiz__provider quiz__provider--azure" id="quiz-ai-azure-fields" hidden>
+                <div class="quiz__group">
+                  <label for="quiz-ai-azure-resource">Azure resource name</label>
+                  <input type="text" id="quiz-ai-azure-resource" placeholder="my-resource" />
+                </div>
+                <div class="quiz__group">
+                  <label for="quiz-ai-azure-deployment">Deployment name</label>
+                  <input type="text" id="quiz-ai-azure-deployment" placeholder="gpt-4o-mini" />
+                </div>
+                <div class="quiz__group quiz__group--inline">
+                  <label for="quiz-ai-azure-version">API version</label>
+                  <input type="text" id="quiz-ai-azure-version" placeholder="2024-02-15" />
+                </div>
+              </div>
+              <div class="quiz__ai-buttons">
+                <button type="button" id="quiz-ai-save" class="secondary small">Save AI settings</button>
+                <button type="button" id="quiz-ai-clear" class="small">Clear</button>
+              </div>
+              <p class="quiz__ai-note">Keys stay in this browser only. Use your own endpoint or provider you trust.</p>
+            </div>
+          </fieldset>
+          <p class="quiz__hint">We look for key terms, turn sentences into fill-in-the-blank prompts, and save each quiz for future review.</p>
+        </form>
+        <p id="quiz-feedback" class="quiz__feedback" role="status" aria-live="polite"></p>
+
+        <section id="quiz-current" class="quiz-card" hidden>
+          <div class="quiz-card__header">
+            <div>
+              <h3 id="quiz-current-title">Current Quiz</h3>
+              <p id="quiz-current-meta" class="quiz-card__meta"></p>
+            </div>
+            <div class="quiz-card__buttons">
+              <button id="check-answers" class="secondary" disabled>Check answers</button>
+              <button id="retake-quiz" disabled>Reset choices</button>
+            </div>
+          </div>
+          <ol id="quiz-questions" class="quiz-questions"></ol>
+          <div id="quiz-score" class="quiz-card__score" role="status" aria-live="polite"></div>
+        </section>
+
+        <section class="quiz__saved">
+          <div class="quiz__saved-header">
+            <h3>Saved Quizzes</h3>
+            <button id="clear-quizzes" class="secondary small">Clear all</button>
+          </div>
+          <ul id="saved-quizzes" class="quiz__saved-list" aria-live="polite"></ul>
+        </section>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
