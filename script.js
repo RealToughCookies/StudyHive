@@ -1,6 +1,80 @@
 // StudyHive - Enhanced Quiz Engine Integration
 // This file integrates the new dual-engine quiz system with the existing StudyHive app
 
+// ============================================================================
+// GLOBAL ERROR HANDLING
+// ============================================================================
+window.addEventListener('error', (event) => {
+  console.error('Global error:', event.error);
+  showErrorMessage('Something went wrong. Please try refreshing the page.');
+  event.preventDefault();
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  console.error('Unhandled promise rejection:', event.reason);
+  showErrorMessage('An unexpected error occurred. Please try again.');
+  event.preventDefault();
+});
+
+function showErrorMessage(message, details = null) {
+  // Remove existing error if present
+  const existing = document.getElementById('global-error-message');
+  if (existing) existing.remove();
+
+  // Create error banner
+  const errorBanner = document.createElement('div');
+  errorBanner.id = 'global-error-message';
+  errorBanner.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background: #dc2626;
+    color: white;
+    padding: 1rem;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: slideDown 0.3s ease;
+  `;
+
+  errorBanner.innerHTML = `
+    <div style="max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+      <span style="font-weight: 600;">⚠️ ${message}</span>
+      ${details ? `<span style="font-size: 0.9rem; opacity: 0.9;">${details}</span>` : ''}
+      <a href="https://github.com/RealToughCookies/StudyHive/issues" target="_blank" rel="noopener" style="color: white; text-decoration: underline; font-size: 0.9rem;">Report Issue</a>
+      <button onclick="this.parentElement.parentElement.remove()" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 0.25rem 0.75rem; border-radius: 4px; cursor: pointer; font-weight: 600;">✕</button>
+    </div>
+  `;
+
+  document.body.prepend(errorBanner);
+
+  // Auto-dismiss after 10 seconds
+  setTimeout(() => {
+    if (errorBanner.parentElement) {
+      errorBanner.style.animation = 'slideUp 0.3s ease';
+      setTimeout(() => errorBanner.remove(), 300);
+    }
+  }, 10000);
+}
+
+// Add slide animations
+if (!document.getElementById('error-animations')) {
+  const style = document.createElement('style');
+  style.id = 'error-animations';
+  style.textContent = `
+    @keyframes slideDown {
+      from { transform: translateY(-100%); }
+      to { transform: translateY(0); }
+    }
+    @keyframes slideUp {
+      from { transform: translateY(0); }
+      to { transform: translateY(-100%); }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 // Quiz Engine Integration
 class QuizEngineIntegration {
   constructor() {
