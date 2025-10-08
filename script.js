@@ -1929,6 +1929,41 @@ function initializeTimer() {
     });
   });
 
+  // Keyboard shortcuts for timer
+  document.addEventListener('keydown', (e) => {
+    // Only trigger on timer page (check if elements exist)
+    if (!startPauseBtn || !resetBtn) return;
+
+    // Ignore if user is typing in an input/textarea
+    if (e.target.matches('input, textarea, [contenteditable]')) return;
+
+    // Space bar: Start/Pause timer
+    if (e.code === 'Space') {
+      e.preventDefault();
+      if (isRunning) {
+        stopTimer();
+      } else {
+        startTimer();
+      }
+      // Visual feedback
+      startPauseBtn.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        startPauseBtn.style.transform = '';
+      }, 100);
+    }
+
+    // R key: Reset timer
+    if (e.key === 'r' || e.key === 'R') {
+      e.preventDefault();
+      resetTimer();
+      // Visual feedback
+      resetBtn.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        resetBtn.style.transform = '';
+      }, 100);
+    }
+  });
+
   // Settings form
   const settingsForm = document.getElementById('settings-form');
   if (settingsForm) {

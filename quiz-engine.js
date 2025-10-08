@@ -23,6 +23,44 @@ class QuizEngine {
       clearForm.addEventListener('click', () => this.clearForm());
     }
 
+    // Keyboard shortcuts for quiz navigation
+    document.addEventListener('keydown', (e) => {
+      // Only activate on quiz pages
+      const quizDisplay = document.getElementById('quiz-display');
+      if (!quizDisplay || quizDisplay.style.display === 'none') return;
+
+      // Ignore if typing in input/textarea
+      if (e.target.matches('input, textarea, [contenteditable]')) return;
+
+      const previousBtn = document.getElementById('previous-question');
+      const nextBtn = document.getElementById('next-question');
+      const finishBtn = document.getElementById('finish-quiz');
+
+      // Left Arrow: Previous question
+      if (e.key === 'ArrowLeft' && previousBtn && !previousBtn.disabled) {
+        e.preventDefault();
+        this.previousQuestion();
+        // Visual feedback
+        previousBtn.style.transform = 'scale(0.95)';
+        setTimeout(() => { previousBtn.style.transform = ''; }, 100);
+      }
+
+      // Right Arrow: Next question
+      if (e.key === 'ArrowRight' && nextBtn && nextBtn.style.display !== 'none') {
+        e.preventDefault();
+        this.nextQuestion();
+        // Visual feedback
+        nextBtn.style.transform = 'scale(0.95)';
+        setTimeout(() => { nextBtn.style.transform = ''; }, 100);
+      }
+
+      // Enter: Finish quiz (when on last question)
+      if (e.key === 'Enter' && finishBtn && finishBtn.style.display !== 'none' && !finishBtn.disabled) {
+        e.preventDefault();
+        finishBtn.click();
+      }
+    });
+
     // Quiz navigation buttons
     const previousBtn = document.getElementById('previous-question');
     const nextBtn = document.getElementById('next-question');
