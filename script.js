@@ -1931,8 +1931,279 @@ document.addEventListener('DOMContentLoaded', function() {
   // Initialize history page (if on history page)
   initializeHistory();
 
+  // Initialize profile page stats & achievements
+  initializeProfile();
+
   console.log('Enhanced quiz engine integration initialized');
 });
+
+function initializeProfile() {
+  const isProfile = window.location.pathname.includes('profile.html');
+  if (!isProfile) return;
+
+  const nameEl = document.getElementById('user-name');
+  const initialsEl = document.getElementById('user-initials');
+  const joinDateEl = document.getElementById('join-date');
+  const displayNameInput = document.getElementById('display-name');
+  const dailyGoalInput = document.getElementById('daily-goal');
+  const sessionGoalInput = document.getElementById('session-goal');
+  const settingsForm = document.getElementById('profile-settings-form');
+  const resetBtn = document.getElementById('reset-stats');
+
+  // Load profile settings
+  const profile = JSON.parse(localStorage.getItem('profile') || '{}');
+  if (profile.displayName && nameEl) nameEl.textContent = profile.displayName;
+  if (profile.displayName && initialsEl) initialsEl.textContent = (profile.displayName || 'SH').split(/\s+/).map(s=>s[0]).join('').slice(0,2).toUpperCase();
+  if (displayNameInput) displayNameInput.value = profile.displayName || displayNameInput.value;
+  if (dailyGoalInput) dailyGoalInput.value = (profile.dailyHoursGoal ?? parseFloat(dailyGoalInput.value || '2'));
+  if (sessionGoalInput) sessionGoalInput.value = (profile.dailySessionGoal ?? parseInt(sessionGoalInput.value || '4'));
+  if (joinDateEl) {
+    const joined = profile.joinedAt || new Date().toISOString();
+    if (!profile.joinedAt) {
+      localStorage.setItem('profile', JSON.stringify({ ...profile, joinedAt: joined }));
+    }
+    const joinedDate = new Date(joined);
+    joinDateEl.textContent = joinedDate.toLocaleDateString();
+  }
+
+  // Save profile settings
+  if (settingsForm) {
+    settingsForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const updated = {
+        displayName: (document.getElementById('display-name')?.value || 'Study Hero').trim().slice(0,30),
+        dailyHoursGoal: Math.max(0, parseFloat(document.getElementById('daily-goal')?.value || '2')),
+        dailySessionGoal: Math.max(0, parseInt(document.getElementById('session-goal')?.value || '4')),
+        joinedAt: (JSON.parse(localStorage.getItem('profile') || '{}').joinedAt) || new Date().toISOString()
+      };
+      localStorage.setItem('profile', JSON.stringify(updated));
+      if (nameEl) nameEl.textContent = updated.displayName;
+      if (initialsEl) initialsEl.textContent = updated.displayName.split(/\s+/).map(s=>s[0]).join('').slice(0,2).toUpperCase();
+      updateDailyGoalsProgress();
+    });
+  }
+
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      if (!confirm('Reset all statistics and achievements? This cannot be undone.')) return;
+      localStorage.removeItem('pomodoroHistory');
+      localStorage.removeItem('achievements');
+      calculateAndRenderProfile();
+      updateDailyGoalsProgress();
+      showToast('Statistics reset', 'success');
+    });
+  }
+
+  // Render initial
+  calculateAndRenderProfile();
+  updateDailyGoalsProgress();
+}
+
+function calculateAndRenderProfile() {
+  const stats = calculateProfileStats();
+  renderProfileStats(stats);
+  checkAchievements(stats);
+}
+
+function calculateProfileStats() {
+  const history = JSON.parse(localStorage.getItem('pomodoroHistory') || '[]');
+  const totalSessions = history.filter(s => s.mode === 'pomodoro').length;
+  const totalMinutes = history.reduce((sum, s) => sum + (s.mode === 'pomodoro' ? (s.duration || 0) : 0), 0);
+
+  // Build set of focus days
+  const daysSet = new Set();
+  history.forEach(s => {
+    if (s.mode === 'pomodoro' && s.completedAt) {
+      const d = new Date(s.completedAt);
+      const key = d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+      daysSet.add(key);
+    }
+  });
+  const days = Array.from(daysSet).map(k => {
+    const [y,m,d] = k.split('-').map(Number);
+    return new Date(y, m-1, d).getTime();
+  }).sort((a,b)=>a-b);
+
+  const { currentStreak, bestStreak } = computeStreaks(days);
+
+  return { totalSessions, totalMinutes, currentStreak, bestStreak };
+}
+
+function computeStreaks(dayTimestamps) {
+  if (dayTimestamps.length === 0) return { currentStreak: 0, bestStreak: 0 };
+  const oneDay = 24*60*60*1000;
+  // Normalize today to local midnight
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+  let best = 1;
+  let curr = 1;
+  for (let i = 1; i < dayTimestamps.length; i++) {
+    const prev = dayTimestamps[i-1];
+    const currDay = dayTimestamps[i];
+    const diff = currDay - prev;
+    if (diff === oneDay) {
+      curr += 1;
+      if (curr > best) best = curr;
+    } else if (diff > oneDay) {
+      curr = 1;
+    }
+  }
+
+  // Compute current streak ending at today or yesterday if no session yet today
+  let currentStreak = 0;
+  // Walk back from the last day
+  let i = dayTimestamps.length - 1;
+  let pointer = today;
+  // If last study day is yesterday, start from yesterday
+  while (i >= 0) {
+    const day = dayTimestamps[i];
+    if (day === pointer) {
+      currentStreak += 1;
+      pointer -= oneDay;
+      i -= 1;
+    } else if (day === pointer - oneDay) {
+      // If no study today but yesterday had, include yesterday and continue
+      pointer -= oneDay;
+    } else if (day < pointer - oneDay) {
+      break;
+    } else {
+      // day > pointer — move pointer back a day to try align
+      pointer -= oneDay;
+    }
+  }
+
+  return { currentStreak, bestStreak: best };
+}
+
+function renderProfileStats(stats) {
+  const totalSessionsEl = document.getElementById('total-sessions');
+  const totalTimeEl = document.getElementById('total-time');
+  const currentStreakEl = document.getElementById('current-streak');
+  const bestStreakEl = document.getElementById('best-streak');
+  if (totalSessionsEl) totalSessionsEl.textContent = String(stats.totalSessions);
+  if (totalTimeEl) {
+    const hours = Math.floor(stats.totalMinutes / 60);
+    const minutes = Math.round(stats.totalMinutes % 60);
+    totalTimeEl.textContent = `${hours}h ${minutes}m`;
+  }
+  if (currentStreakEl) currentStreakEl.textContent = String(stats.currentStreak);
+  if (bestStreakEl) bestStreakEl.textContent = String(stats.bestStreak);
+}
+
+function updateDailyGoalsProgress() {
+  const profile = JSON.parse(localStorage.getItem('profile') || '{}');
+  const hoursGoal = profile.dailyHoursGoal ?? 2;
+  const sessionsGoal = profile.dailySessionGoal ?? 4;
+
+  const history = JSON.parse(localStorage.getItem('pomodoroHistory') || '[]');
+  const today = new Date();
+  const todayKey = today.toLocaleDateString();
+  const todaySessions = history.filter(s => s.mode === 'pomodoro' && s.date === todayKey);
+  const todayMinutes = todaySessions.reduce((sum, s) => sum + (s.duration || 0), 0);
+
+  const dailyProgressEl = document.getElementById('daily-progress');
+  const dailyBar = document.getElementById('daily-progress-bar');
+  const sessionProgressEl = document.getElementById('session-progress');
+  const sessionBar = document.getElementById('session-progress-bar');
+
+  const hoursDone = todayMinutes / 60;
+  const timePct = Math.min(100, Math.round((hoursDone / (hoursGoal || 1)) * 100));
+  if (dailyProgressEl) dailyProgressEl.textContent = `${hoursDone.toFixed(1)} / ${hoursGoal} hours`;
+  if (dailyBar) dailyBar.style.width = `${timePct}%`;
+
+  const sessionsDone = todaySessions.length;
+  const sessionsPct = Math.min(100, Math.round((sessionsDone / (sessionsGoal || 1)) * 100));
+  if (sessionProgressEl) sessionProgressEl.textContent = `${sessionsDone} / ${sessionsGoal} sessions`;
+  if (sessionBar) sessionBar.style.width = `${sessionsPct}%`;
+}
+
+function checkAchievements(stats) {
+  const key = 'achievements';
+  const state = JSON.parse(localStorage.getItem(key) || '{}');
+
+  const unlock = (id, title) => {
+    if (state[id]) return; // already unlocked
+    state[id] = { unlockedAt: new Date().toISOString() };
+    localStorage.setItem(key, JSON.stringify(state));
+    const el = document.querySelector(`.achievement[data-achievement="${id}"]`);
+    if (el) el.classList.add('achievement--unlocked');
+    showToast(`Achievement unlocked: ${title}`, 'success');
+    launchConfetti();
+  };
+
+  // First Steps: 1 session
+  if (stats.totalSessions >= 1) unlock('first-session', 'First Steps');
+  // Week Warrior: 7 day streak
+  if (stats.bestStreak >= 7 || stats.currentStreak >= 7) unlock('week-streak', 'Week Warrior');
+  // Hour Master: 10 hours total
+  if ((stats.totalMinutes/60) >= 10) unlock('hour-master', 'Hour Master');
+  // Focus Champion: 50 sessions
+  if (stats.totalSessions >= 50) unlock('focus-champion', 'Focus Champion');
+
+  // Paint existing unlocked on load
+  ['first-session','week-streak','hour-master','focus-champion'].forEach(id => {
+    if (state[id]) {
+      const el = document.querySelector(`.achievement[data-achievement="${id}"]`);
+      if (el) el.classList.add('achievement--unlocked');
+    }
+  });
+}
+
+function showToast(message, type = 'info') {
+  let toast = document.getElementById('app-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'app-toast';
+    toast.style.position = 'fixed';
+    toast.style.right = '16px';
+    toast.style.bottom = '16px';
+    toast.style.zIndex = '1000';
+    toast.style.padding = '12px 16px';
+    toast.style.borderRadius = '10px';
+    toast.style.border = '1px solid var(--border)';
+    toast.style.background = 'var(--bg-card)';
+    toast.style.color = 'var(--text)';
+    toast.style.boxShadow = 'var(--shadow)';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.style.display = 'block';
+  toast.style.opacity = '1';
+  setTimeout(() => {
+    toast.style.transition = 'opacity 0.5s ease';
+    toast.style.opacity = '0';
+    setTimeout(() => { toast.style.display = 'none'; toast.style.transition = ''; }, 600);
+  }, 1800);
+}
+
+function launchConfetti() {
+  // minimal celebratory confetti using canvas if available
+  let canvas = document.getElementById('confetti-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const pieces = Array.from({length: 120}, () => ({
+    x: Math.random()*canvas.width,
+    y: -20 - Math.random()*canvas.height,
+    r: 3 + Math.random()*4,
+    c: ['#f6c24a','#06d6a0','#1b9aaa','#ef476f'][Math.floor(Math.random()*4)],
+    v: 2 + Math.random()*3
+  }));
+  let frames = 0;
+  const tick = () => {
+    frames++;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    pieces.forEach(p => {
+      p.y += p.v;
+      ctx.fillStyle = p.c;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fill();
+    });
+    if (frames < 120) requestAnimationFrame(tick);
+  };
+  tick();
+}
 
 function addAIBoostBadge() {
   // Add AI Boost badge to the header
