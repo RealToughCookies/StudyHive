@@ -20,12 +20,16 @@
 **✅ Repository Live:** https://github.com/RealToughCookies/StudyHive
 
 ### Documentation
-- [ ] Create `README.md` with:
-  - [ ] Project description & features - **10 min**
-  - [ ] Setup instructions (`npm install && npm run dev`) - **5 min**
-  - [ ] AI configuration guide (how to enable Web LLM) - **10 min**
-  - [ ] Browser requirements (Chrome 113+, WebGPU) - **3 min**
-  - [ ] License (MIT) - **2 min**
+- [x] Create `README.md` with: ✅ DONE
+  - [x] Project description & features - **10 min** ✅
+  - [x] Setup instructions (`npm install && npm run dev`) - **5 min** ✅
+  - [x] AI configuration guide (how to enable Web LLM) - **10 min** ✅
+  - [x] Browser requirements (Chrome 113+, WebGPU) - **3 min** ✅
+  - [x] License (MIT) - **2 min** ✅
+  - [x] **BONUS:** Troubleshooting guide ✅
+  - [x] **BONUS:** Contributing guidelines ✅
+  - [x] **BONUS:** Browser compatibility table ✅
+  - [x] **BONUS:** Full tech stack documentation ✅
 
 ### Tauri Desktop App
 - [ ] Create `icons/` directory - **1 min**
