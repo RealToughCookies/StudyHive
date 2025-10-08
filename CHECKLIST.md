@@ -31,7 +31,7 @@
   - [x] **BONUS:** Browser compatibility table ✅
   - [x] **BONUS:** Full tech stack documentation ✅
 
-### Tauri Desktop App
+### Tauri Desktop App (Optional - Skip for Website Focus)
 - [ ] Create `icons/` directory - **1 min**
 - [ ] Generate required icon sizes:
   - [ ] 32x32.png - **5 min**
@@ -41,8 +41,10 @@
   - [ ] icon.ico (Windows) - **3 min**
 - [ ] Test Tauri build (`npm run tauri build`) - **5 min**
 
-**Total Time: ~1 hour**
-**Impact: Protects all your work, enables desktop app**
+**Note:** Tauri is optional if you want StudyHive as a **website only**. The app works perfectly in browsers without it. You can build the desktop version later if needed.
+
+**Total Time: ~45 minutes** (Git + README complete, Tauri optional)
+**Impact: Your work is protected ✅, documentation complete ✅**
 
 ---
 
