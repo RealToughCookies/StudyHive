@@ -1928,6 +1928,9 @@ document.addEventListener('DOMContentLoaded', function() {
   // Initialize quiz form selectors (if on quiz page)
   initializeQuizFormSelectors();
 
+  // Initialize history page (if on history page)
+  initializeHistory();
+
   console.log('Enhanced quiz engine integration initialized');
 });
 
@@ -3533,6 +3536,286 @@ function initializeQuizFormSelectors() {
   // Initialize dropdowns
   populateCourseDropdown();
   populateNoteDropdown('');
+}
+
+// ============================================================================
+// HISTORY PAGE MANAGEMENT
+// ============================================================================
+function initializeHistory() {
+  const pomodoroHistoryList = document.getElementById('pomodoro-history-list');
+  const quizHistoryList = document.getElementById('quiz-history-list');
+  const cheatsheetHistoryList = document.getElementById('cheatsheet-history-list');
+
+  // Exit if not on history page
+  if (!pomodoroHistoryList) return;
+
+  let currentFilter = 'all';
+  let currentTab = 'pomodoro';
+
+  // ============================================================================
+  // POMODORO HISTORY DISPLAY
+  // ============================================================================
+  function displayPomodoroHistory(filterDays = 'all') {
+    const history = JSON.parse(localStorage.getItem('pomodoroHistory') || '[]');
+
+    if (history.length === 0) {
+      pomodoroHistoryList.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">⏱️</div>
+          <h3>No Pomodoro sessions yet</h3>
+          <p>Complete your first focus session to see it here!</p>
+          <a href="index.html" class="primary" style="margin-top: 1rem; display: inline-block; text-decoration: none; padding: 0.75rem 1.5rem; border-radius: 8px;">Start a Session</a>
+        </div>
+      `;
+      return;
+    }
+
+    // Filter by date
+    let filteredHistory = history;
+    if (filterDays !== 'all') {
+      const now = new Date();
+      const cutoffDate = new Date();
+
+      if (filterDays === 'today') {
+        cutoffDate.setHours(0, 0, 0, 0);
+      } else {
+        cutoffDate.setDate(now.getDate() - parseInt(filterDays));
+      }
+
+      filteredHistory = history.filter(session => {
+        const sessionDate = new Date(session.completedAt);
+        return sessionDate >= cutoffDate;
+      });
+    }
+
+    if (filteredHistory.length === 0) {
+      pomodoroHistoryList.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">📅</div>
+          <h3>No sessions in this time period</h3>
+          <p>Try selecting a different date range.</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Group sessions by date
+    const groupedByDate = {};
+    filteredHistory.forEach(session => {
+      const date = new Date(session.completedAt).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+
+      if (!groupedByDate[date]) {
+        groupedByDate[date] = [];
+      }
+      groupedByDate[date].push(session);
+    });
+
+    // Calculate statistics
+    const totalSessions = filteredHistory.length;
+    const focusSessions = filteredHistory.filter(s => s.mode === 'pomodoro').length;
+    const totalMinutes = filteredHistory.reduce((sum, s) => sum + s.duration, 0);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = Math.round(totalMinutes % 60);
+
+    // Render statistics
+    let html = `
+      <div class="history__stats">
+        <div class="stat-card">
+          <div class="stat-value">${totalSessions}</div>
+          <div class="stat-label">Total Sessions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${focusSessions}</div>
+          <div class="stat-label">Focus Sessions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${hours}h ${minutes}m</div>
+          <div class="stat-label">Total Time</div>
+        </div>
+      </div>
+    `;
+
+    // Render grouped sessions
+    Object.keys(groupedByDate).forEach(date => {
+      const sessions = groupedByDate[date];
+      const dateTotal = sessions.reduce((sum, s) => sum + s.duration, 0);
+
+      html += `
+        <div class="history__date-group">
+          <div class="history__date-header">
+            <h3>${date}</h3>
+            <span class="history__date-total">${sessions.length} sessions · ${dateTotal} min</span>
+          </div>
+          <div class="history__sessions">
+      `;
+
+      sessions.forEach(session => {
+        const time = new Date(session.completedAt).toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        });
+
+        const modeLabel = {
+          'pomodoro': 'Focus',
+          'short-break': 'Short Break',
+          'long-break': 'Long Break'
+        }[session.mode] || session.mode;
+
+        const modeIcon = {
+          'pomodoro': '🎯',
+          'short-break': '☕',
+          'long-break': '🌴'
+        }[session.mode] || '⏱️';
+
+        const modeClass = session.mode.replace('-break', '');
+
+        html += `
+          <div class="session-card session-card--${modeClass}">
+            <div class="session-icon">${modeIcon}</div>
+            <div class="session-details">
+              <div class="session-type">${modeLabel}</div>
+              <div class="session-time">${time}</div>
+            </div>
+            <div class="session-duration">${session.duration} min</div>
+          </div>
+        `;
+      });
+
+      html += `
+          </div>
+        </div>
+      `;
+    });
+
+    pomodoroHistoryList.innerHTML = html;
+  }
+
+  // ============================================================================
+  // TAB SWITCHING
+  // ============================================================================
+  function switchTab(tabName) {
+    currentTab = tabName;
+
+    // Update tab buttons
+    document.querySelectorAll('.history__tab').forEach(tab => {
+      if (tab.dataset.tab === tabName) {
+        tab.classList.add('history__tab--active');
+      } else {
+        tab.classList.remove('history__tab--active');
+      }
+    });
+
+    // Update panels
+    document.querySelectorAll('.history__panel').forEach(panel => {
+      panel.classList.remove('history__panel--active');
+    });
+
+    const activePanel = document.getElementById(`${tabName}-history`);
+    if (activePanel) {
+      activePanel.classList.add('history__panel--active');
+    }
+
+    // Load data for active tab
+    if (tabName === 'pomodoro') {
+      displayPomodoroHistory(currentFilter);
+    } else if (tabName === 'quizzes') {
+      displayQuizHistory();
+    } else if (tabName === 'cheatsheets') {
+      displayCheatsheetHistory();
+    }
+  }
+
+  // ============================================================================
+  // QUIZ HISTORY (Placeholder)
+  // ============================================================================
+  function displayQuizHistory() {
+    if (!quizHistoryList) return;
+
+    quizHistoryList.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📝</div>
+        <h3>Quiz history coming soon</h3>
+        <p>Your completed quizzes will appear here.</p>
+      </div>
+    `;
+  }
+
+  // ============================================================================
+  // CHEATSHEET HISTORY (Placeholder)
+  // ============================================================================
+  function displayCheatsheetHistory() {
+    if (!cheatsheetHistoryList) return;
+
+    const cheatsheets = cheatsheetsManager ? cheatsheetsManager.getAllCheatsheets() : [];
+
+    if (cheatsheets.length === 0) {
+      cheatsheetHistoryList.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">📄</div>
+          <h3>No cheat sheets yet</h3>
+          <p>Create your first cheat sheet to see it here!</p>
+          <a href="cheatsheets.html" class="primary" style="margin-top: 1rem; display: inline-block; text-decoration: none; padding: 0.75rem 1.5rem; border-radius: 8px;">Create Cheat Sheet</a>
+        </div>
+      `;
+      return;
+    }
+
+    const html = cheatsheets.map(sheet => {
+      const date = new Date(sheet.createdAt).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      });
+
+      return `
+        <li class="history-item">
+          <div class="history-item__icon">📄</div>
+          <div class="history-item__content">
+            <h4>${sheet.title}</h4>
+            <p class="history-item__meta">${sheet.courseName || 'General'} · ${date}</p>
+          </div>
+          <a href="cheatsheets.html" class="history-item__action">View</a>
+        </li>
+      `;
+    }).join('');
+
+    cheatsheetHistoryList.innerHTML = html;
+  }
+
+  // ============================================================================
+  // DATE FILTER
+  // ============================================================================
+  const dateFilter = document.getElementById('date-filter');
+  if (dateFilter) {
+    dateFilter.addEventListener('change', (e) => {
+      currentFilter = e.target.value;
+      if (currentTab === 'pomodoro') {
+        displayPomodoroHistory(currentFilter);
+      }
+    });
+  }
+
+  // ============================================================================
+  // TAB CLICK HANDLERS
+  // ============================================================================
+  document.querySelectorAll('.history__tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      switchTab(tab.dataset.tab);
+    });
+  });
+
+  // ============================================================================
+  // INITIALIZE
+  // ============================================================================
+  displayPomodoroHistory(currentFilter);
 }
 
 // ============================================================================

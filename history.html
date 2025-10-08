@@ -44,15 +44,37 @@
       </header>
 
       <section class="progress" aria-label="Learning history">
-        <h2>Learning History</h2>
+        <div class="progress__header">
+          <h2>Learning History</h2>
+          <div class="progress__filters">
+            <label for="date-filter" class="filter-label">Show:</label>
+            <select id="date-filter" class="filter-select">
+              <option value="all">All Time</option>
+              <option value="7">Last 7 Days</option>
+              <option value="30">Last 30 Days</option>
+              <option value="today">Today</option>
+            </select>
+          </div>
+        </div>
+
         <div class="history__tabs">
-          <button class="history__tab history__tab--active" data-tab="quizzes">Quizzes</button>
+          <button class="history__tab history__tab--active" data-tab="pomodoro">Pomodoro Sessions</button>
+          <button class="history__tab" data-tab="quizzes">Quizzes</button>
           <button class="history__tab" data-tab="cheatsheets">Cheat Sheets</button>
         </div>
+
         <div class="history__content">
-          <div id="quiz-history" class="history__panel history__panel--active">
+          <!-- Pomodoro History Panel -->
+          <div id="pomodoro-history" class="history__panel history__panel--active">
+            <div id="pomodoro-history-list" class="progress__list"></div>
+          </div>
+
+          <!-- Quiz History Panel -->
+          <div id="quiz-history" class="history__panel">
             <ol id="quiz-history-list" class="progress__list"></ol>
           </div>
+
+          <!-- Cheatsheet History Panel -->
           <div id="cheatsheet-history" class="history__panel">
             <ol id="cheatsheet-history-list" class="progress__list"></ol>
           </div>
