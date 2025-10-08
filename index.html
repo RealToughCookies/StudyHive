@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>StudyHive</title>
+    <link rel="stylesheet" href="style.css" />
+    <meta name="theme-color" content="#f7f3eb">
+    <script>
+      // Apply theme immediately to prevent flash
+      (function() {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        if (savedTheme === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+          if (metaThemeColor) {
+            metaThemeColor.setAttribute('content', '#0a1624');
+          }
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <main class="app">
+      <header class="app__header">
+        <div class="app__header-top">
+          <div class="app__brand">
+            <img src="StudyHiveLogo.png" alt="StudyHive logo" class="app__logo" />
+            <h1>StudyHive</h1>
+          </div>
+          <a href="profile.html" class="profile-button" title="Profile">
+            <span class="profile-button__avatar">SH</span>
+          </a>
+        </div>
+        <p class="app__tagline">Stay focused, take breaks, track progress.</p>
+        <nav class="app__nav" aria-label="Primary">
+          <a class="app__nav-link app__nav-link--active" href="index.html" aria-current="page">Focus Timer</a>
+          <a class="app__nav-link" href="courses.html">Courses</a>
+          <a class="app__nav-link" href="notes.html">Notes</a>
+          <a class="app__nav-link" href="cheatsheets.html">Cheat Sheets</a>
+          <a class="app__nav-link" href="quizzes.html">Quizzes</a>
+          <a class="app__nav-link" href="history.html">History</a>
+        </nav>
+      </header>
+
+      <section class="timer" aria-live="polite">
+        <div class="timer__mode">
+          <button class="mode-btn" data-mode="focus">Focus</button>
+          <button class="mode-btn" data-mode="short-break">Short Break</button>
+          <button class="mode-btn" data-mode="long-break">Long Break</button>
+        </div>
+        <div class="timer__display" id="timer-display">25:00</div>
+        <div class="timer__controls">
+          <button id="start-pause" class="primary">Start</button>
+          <button id="reset">Reset</button>
+        </div>
+        <div class="timer__auto">
+          <label class="auto-toggle">
+            <input type="checkbox" id="auto-mode" class="auto-toggle__input" />
+            <span class="auto-toggle__text">Auto-start next session</span>
+          </label>
+        </div>
+      </section>
+
+
+      <section class="settings" aria-label="Timer settings">
+        <h2>Customize Durations</h2>
+        <form id="settings-form">
+          <div class="settings__group">
+            <label for="focus-duration">Focus (minutes)</label>
+            <input type="number" id="focus-duration" min="1" max="90" value="25" />
+          </div>
+          <div class="settings__group">
+            <label for="short-break-duration">Short Break (minutes)</label>
+            <input type="number" id="short-break-duration" min="1" max="30" value="5" />
+          </div>
+          <div class="settings__group">
+            <label for="long-break-duration">Long Break (minutes)</label>
+            <input type="number" id="long-break-duration" min="1" max="60" value="15" />
+          </div>
+          <div class="settings__group">
+            <label for="sessions-before-long-break">Sessions before long break</label>
+            <input type="number" id="sessions-before-long-break" min="1" max="12" value="4" />
+          </div>
+          <button type="submit" class="secondary">Apply</button>
+        </form>
+      </section>
+    </main>
+
+    <canvas id="confetti-canvas"></canvas>
+    <script type="module" src="web-llm-bridge.js"></script>
+    <script defer src="script.js"></script>
+  </body>
+</html>

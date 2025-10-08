@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>StudyHive · Notes</title>
+  <meta name="theme-color" content="#f7f3eb">
+    <script>
+      // Apply theme immediately to prevent flash
+      (function() {
+        const savedTheme = localStorage.getItem("theme") || "light";
+        if (savedTheme === "dark") {
+          document.documentElement.setAttribute("data-theme", "dark");
+          const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+          if (metaThemeColor) {
+            metaThemeColor.setAttribute("content", "#0a1624");
+          }
+        }
+      })();
+    </script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="app__header">
+        <div class="app__header-top">
+          <div class="app__brand">
+            <img src="StudyHiveLogo.png" alt="StudyHive logo" class="app__logo" />
+            <h1>StudyHive</h1>
+          </div>
+          <a href="profile.html" class="profile-button" title="Profile">
+            <span class="profile-button__avatar">SH</span>
+          </a>
+        </div>
+        <p class="app__tagline">Stay focused, take breaks, track progress.</p>
+        <nav class="app__nav" aria-label="Primary">
+          <a class="app__nav-link" href="index.html">Focus Timer</a>
+          <a class="app__nav-link" href="courses.html">Courses</a>
+          <a class="app__nav-link app__nav-link--active" href="notes.html" aria-current="page">Notes</a>
+          <a class="app__nav-link" href="cheatsheets.html">Cheat Sheets</a>
+          <a class="app__nav-link" href="quizzes.html">Quizzes</a>
+          <a class="app__nav-link" href="history.html">History</a>
+        </nav>
+      </header>
+
+      <section class="notes" aria-label="Course notes">
+        <div class="notes__header">
+          <h2>Notes</h2>
+          <p class="notes__intro">Capture detailed notes for each course and reuse them while studying.</p>
+        </div>
+        <form id="note-form" class="note-form">
+          <input type="hidden" id="note-id" />
+          <div class="note-form__grid">
+            <div class="note-form__group">
+              <label for="note-title">Title</label>
+              <input type="text" id="note-title" required placeholder="Enzymes overview" />
+            </div>
+            <div class="note-form__group">
+              <label for="note-course-select">Course (Optional)</label>
+              <select id="note-course-select">
+                <option value="">Select course…</option>
+              </select>
+            </div>
+          </div>
+          <div class="note-form__group">
+            <label for="note-content">Notes</label>
+            <textarea id="note-content" rows="4" required placeholder="Add your detailed notes…"></textarea>
+          </div>
+          <div class="note-form__actions">
+            <button type="submit" class="primary" id="note-save">Save note</button>
+            <button type="button" class="secondary" id="note-cancel" hidden>Cancel edit</button>
+            <button type="reset" class="small">Reset</button>
+          </div>
+          <p id="note-feedback" class="note-feedback" role="status" aria-live="polite"></p>
+        </form>
+        <div id="note-list" class="note-list" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

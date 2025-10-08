@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>StudyHive · Courses</title>
+  <meta name="theme-color" content="#f7f3eb">
+    <script>
+      // Apply theme immediately to prevent flash
+      (function() {
+        const savedTheme = localStorage.getItem("theme") || "light";
+        if (savedTheme === "dark") {
+          document.documentElement.setAttribute("data-theme", "dark");
+          const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+          if (metaThemeColor) {
+            metaThemeColor.setAttribute("content", "#0a1624");
+          }
+        }
+      })();
+    </script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="app__header">
+        <div class="app__header-top">
+          <div class="app__brand">
+            <img src="StudyHiveLogo.png" alt="StudyHive logo" class="app__logo" />
+            <h1>StudyHive</h1>
+          </div>
+          <a href="profile.html" class="profile-button" title="Profile">
+            <span class="profile-button__avatar">SH</span>
+          </a>
+        </div>
+        <p class="app__tagline">Stay focused, take breaks, track progress.</p>
+        <nav class="app__nav" aria-label="Primary">
+          <a class="app__nav-link" href="index.html">Focus Timer</a>
+          <a class="app__nav-link app__nav-link--active" href="courses.html" aria-current="page">Courses</a>
+          <a class="app__nav-link" href="notes.html">Notes</a>
+          <a class="app__nav-link" href="cheatsheets.html">Cheat Sheets</a>
+          <a class="app__nav-link" href="quizzes.html">Quizzes</a>
+          <a class="app__nav-link" href="history.html">History</a>
+        </nav>
+      </header>
+
+      <section class="courses" aria-label="Course folders">
+        <div class="courses__header">
+          <h2>Courses</h2>
+          <p class="courses__intro">Organize notes by class. Track context, goals, and topics learned for each course.</p>
+        </div>
+        <form id="course-form" class="course-form">
+          <input type="hidden" id="course-id" />
+          <div class="course-form__grid">
+            <div class="course-form__group">
+              <label for="course-name">Course name</label>
+              <input type="text" id="course-name" required placeholder="Intro to Biology" />
+            </div>
+            <div class="course-form__group">
+              <label for="course-code">Course code</label>
+              <input type="text" id="course-code" placeholder="BIO 101" />
+            </div>
+            <div class="course-form__group">
+              <label for="course-instructor">Instructor</label>
+              <input type="text" id="course-instructor" placeholder="Dr. Smith" />
+            </div>
+            <div class="course-form__group">
+              <label for="course-term">Term / schedule</label>
+              <input type="text" id="course-term" placeholder="Fall 2024" />
+            </div>
+          </div>
+          <div class="course-form__group">
+            <label for="course-context">Course context</label>
+            <textarea id="course-context" rows="3" placeholder="Describe the focus, goals, or structure of the class."></textarea>
+          </div>
+          <div class="course-form__group">
+            <label for="course-topics">Topics covered</label>
+            <textarea id="course-topics" rows="3" placeholder="Add one topic per line to keep track of what you've learned."></textarea>
+          </div>
+          <div class="course-form__actions">
+            <button type="submit" class="primary" id="course-save">Save course</button>
+            <button type="button" class="secondary" id="course-cancel" hidden>Cancel edit</button>
+            <button type="reset" class="small" id="course-reset">Reset</button>
+          </div>
+          <p id="course-feedback" class="course-feedback" role="status" aria-live="polite"></p>
+        </form>
+        <div id="course-list" class="course-list" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Diagnostic - StudyHive</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .diagnostic {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 2rem;
+    }
+    .status-item {
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 8px;
+      border: 2px solid var(--muted);
+    }
+    .status-item.success {
+      border-color: #06d6a0;
+      background: rgba(6, 214, 160, 0.1);
+    }
+    .status-item.error {
+      border-color: #ef476f;
+      background: rgba(239, 71, 111, 0.1);
+    }
+    .status-item.warning {
+      border-color: #ffd166;
+      background: rgba(255, 209, 102, 0.1);
+    }
+    .test-button {
+      margin: 1rem 0;
+      padding: 1rem 2rem;
+      font-size: 1.1rem;
+    }
+    pre {
+      background: var(--bg-secondary);
+      padding: 1rem;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="app__header">
+      <div class="app__header-top">
+        <div class="app__brand">
+          <img src="StudyHiveLogo.png" alt="StudyHive logo" class="app__logo">
+          <h1>StudyHive - AI Diagnostic</h1>
+        </div>
+      </div>
+      <p class="app__tagline">Check your AI setup</p>
+    </header>
+
+    <section class="diagnostic">
+      <h2>AI System Diagnostic</h2>
+
+      <div class="status-item" id="webllm-library-status">
+        <h3>1. Web LLM Library</h3>
+        <p id="webllm-library-text">Checking...</p>
+      </div>
+
+      <div class="status-item" id="ai-mode-status">
+        <h3>2. AI Mode Setting</h3>
+        <p id="ai-mode-text">Checking...</p>
+      </div>
+
+      <div class="status-item" id="llm-bridge-status">
+        <h3>3. LLM Bridge Status</h3>
+        <p id="llm-bridge-text">Checking...</p>
+      </div>
+
+      <div class="status-item" id="engine-selector-status">
+        <h3>4. Engine Selector</h3>
+        <p id="engine-selector-text">Checking...</p>
+      </div>
+
+      <div class="status-item" id="webgpu-status">
+        <h3>5. WebGPU Support</h3>
+        <p id="webgpu-text">Checking...</p>
+      </div>
+
+      <hr style="margin: 2rem 0;">
+
+      <h3>Test Quiz Generation</h3>
+      <button class="primary test-button" id="test-quiz-btn">Generate Test Quiz</button>
+      <div id="test-result" style="margin-top: 1rem;"></div>
+
+      <hr style="margin: 2rem 0;">
+
+      <h3>Actions</h3>
+      <button class="secondary" onclick="location.href='profile.html'">Go to Profile (Enable AI)</button>
+      <button class="secondary" onclick="location.href='quizzes.html'">Go to Quizzes</button>
+      <button class="secondary" onclick="location.reload()">Refresh Diagnostic</button>
+    </section>
+  </main>
+
+  <script type="module" src="web-llm-bridge.js"></script>
+  <script defer src="script.js"></script>
+  <script defer>
+    // Wait for everything to load
+    setTimeout(() => {
+      runDiagnostic();
+    }, 1000);
+
+    // Auto-refresh every 3 seconds if model is initializing
+    setInterval(() => {
+      const bridge = window.quizEngineIntegration?.llmBridge;
+      if (bridge && bridge.useWebLLM && !bridge.ready) {
+        console.log('🔄 Model still initializing, refreshing diagnostic...');
+        runDiagnostic();
+      }
+    }, 3000);
+
+    function runDiagnostic() {
+      // 1. Check Web LLM Library
+      const webllmLibDiv = document.getElementById('webllm-library-status');
+      const webllmLibText = document.getElementById('webllm-library-text');
+      if (window.WebLLMBridge) {
+        webllmLibDiv.className = 'status-item success';
+        webllmLibText.innerHTML = '✅ Web LLM library loaded successfully!';
+      } else {
+        webllmLibDiv.className = 'status-item error';
+        webllmLibText.innerHTML = '❌ Web LLM library NOT loaded. The web-llm-bridge.js file is not loading properly.';
+      }
+
+      // 2. Check AI Mode
+      const aiModeDiv = document.getElementById('ai-mode-status');
+      const aiModeText = document.getElementById('ai-mode-text');
+      const aiMode = localStorage.getItem('ai_mode');
+      if (aiMode === 'webllm') {
+        aiModeDiv.className = 'status-item success';
+        aiModeText.innerHTML = '✅ AI Mode: <strong>webllm</strong><br>Web LLM is enabled in settings.';
+      } else if (aiMode === 'browser') {
+        aiModeDiv.className = 'status-item warning';
+        aiModeText.innerHTML = '⚠️ AI Mode: <strong>browser</strong><br>Using Browser AI instead of Web LLM.';
+      } else if (aiMode === 'claude') {
+        aiModeDiv.className = 'status-item warning';
+        aiModeText.innerHTML = '⚠️ AI Mode: <strong>claude</strong><br>Using Claude API instead of Web LLM.';
+      } else {
+        aiModeDiv.className = 'status-item error';
+        aiModeText.innerHTML = `❌ AI Mode: <strong>${aiMode || 'none'}</strong><br>No AI enabled. Go to Profile page and enable "Use Web LLM".`;
+      }
+
+      // 3. Check LLM Bridge
+      const llmBridgeDiv = document.getElementById('llm-bridge-status');
+      const llmBridgeText = document.getElementById('llm-bridge-text');
+      if (window.quizEngineIntegration && window.quizEngineIntegration.llmBridge) {
+        const bridge = window.quizEngineIntegration.llmBridge;
+        const isReady = bridge.isReady();
+        const modelReady = localStorage.getItem('webllm_model_ready') === 'true';
+
+        if (isReady) {
+          llmBridgeDiv.className = 'status-item success';
+          llmBridgeText.innerHTML = `✅ LLM Bridge is READY!<br>
+            <pre>${JSON.stringify({
+              useWebLLM: bridge.useWebLLM,
+              useBrowserAI: bridge.useBrowserAI,
+              useClaudeAPI: bridge.useClaudeAPI,
+              ready: bridge.ready
+            }, null, 2)}</pre>`;
+        } else if (bridge.useWebLLM && modelReady) {
+          llmBridgeDiv.className = 'status-item warning';
+          llmBridgeText.innerHTML = `⏳ LLM Bridge initializing from cache...<br>
+            <pre>${JSON.stringify({
+              useWebLLM: bridge.useWebLLM,
+              useBrowserAI: bridge.useBrowserAI,
+              useClaudeAPI: bridge.useClaudeAPI,
+              ready: bridge.ready,
+              modelInCache: modelReady
+            }, null, 2)}</pre>
+            <strong>Please wait:</strong> Model is loading from cache. This page will auto-update in a few seconds.`;
+        } else {
+          llmBridgeDiv.className = 'status-item warning';
+          llmBridgeText.innerHTML = `⚠️ LLM Bridge exists but NOT ready<br>
+            <pre>${JSON.stringify({
+              useWebLLM: bridge.useWebLLM,
+              useBrowserAI: bridge.useBrowserAI,
+              useClaudeAPI: bridge.useClaudeAPI,
+              ready: bridge.ready
+            }, null, 2)}</pre>
+            <strong>Action needed:</strong> Go to Profile and click "Download Model"`;
+        }
+      } else {
+        llmBridgeDiv.className = 'status-item error';
+        llmBridgeText.innerHTML = '❌ LLM Bridge not initialized. Quiz engine failed to load.';
+      }
+
+      // 4. Check Engine Selector
+      const engineDiv = document.getElementById('engine-selector-status');
+      const engineText = document.getElementById('engine-selector-text');
+      if (window.quizEngineIntegration && window.quizEngineIntegration.engineSelector) {
+        const selectedEngine = window.quizEngineIntegration.engineSelector.chooseEngine();
+        const status = window.quizEngineIntegration.getEngineStatus();
+
+        if (selectedEngine === 'LLM') {
+          engineDiv.className = 'status-item success';
+          engineText.innerHTML = `✅ Selected Engine: <strong>LLM</strong><br>
+            AI will be used for quiz generation!
+            <pre>${JSON.stringify(status, null, 2)}</pre>`;
+        } else {
+          engineDiv.className = 'status-item warning';
+          engineText.innerHTML = `⚠️ Selected Engine: <strong>${selectedEngine}</strong><br>
+            Rules engine will be used instead of AI.
+            <pre>${JSON.stringify(status, null, 2)}</pre>`;
+        }
+      } else {
+        engineDiv.className = 'status-item error';
+        engineText.innerHTML = '❌ Engine selector not found.';
+      }
+
+      // 5. Check WebGPU
+      const webgpuDiv = document.getElementById('webgpu-status');
+      const webgpuText = document.getElementById('webgpu-text');
+      if ('gpu' in navigator) {
+        webgpuDiv.className = 'status-item success';
+        webgpuText.innerHTML = '✅ WebGPU is supported in this browser!<br>You can use Web LLM.';
+      } else {
+        webgpuDiv.className = 'status-item error';
+        webgpuText.innerHTML = '❌ WebGPU is NOT supported in this browser.<br>Please use Chrome 113+, Edge 113+, or Firefox 121+ with WebGPU enabled.';
+      }
+    }
+
+    // Test quiz generation
+    document.getElementById('test-quiz-btn').addEventListener('click', async () => {
+      const resultDiv = document.getElementById('test-result');
+      resultDiv.innerHTML = '<p>🔄 Generating test quiz...</p>';
+
+      try {
+        const quiz = await window.generateEnhancedQuiz(
+          'Test Topic',
+          'easy',
+          2,
+          'This is a test. Photosynthesis is the process by which plants convert light energy into chemical energy.'
+        );
+
+        resultDiv.innerHTML = `<div class="status-item success">
+          <h4>✅ Quiz Generated Successfully!</h4>
+          <p><strong>Source:</strong> ${quiz.metadata.source}</p>
+          <p><strong>Questions:</strong> ${quiz.questions.length}</p>
+          <pre>${JSON.stringify(quiz, null, 2)}</pre>
+        </div>`;
+      } catch (error) {
+        resultDiv.innerHTML = `<div class="status-item error">
+          <h4>❌ Quiz Generation Failed</h4>
+          <p>${error.message}</p>
+          <pre>${error.stack}</pre>
+        </div>`;
+      }
+    });
+  </script>
+</body>
+</html>

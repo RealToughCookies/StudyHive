@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Test - StudyHive</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .test-container {
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 2rem;
+    }
+    .log-area {
+      background: #1a1a1a;
+      color: #00ff00;
+      padding: 1rem;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 0.9rem;
+      height: 400px;
+      overflow-y: auto;
+      margin: 1rem 0;
+    }
+    .log-line {
+      margin: 0.25rem 0;
+    }
+    button {
+      margin: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="test-container">
+      <h1>AI Manual Test</h1>
+      <p>This page will help us manually test and initialize the AI.</p>
+
+      <div>
+        <button class="primary" onclick="checkStatus()">1. Check Status</button>
+        <button class="primary" onclick="checkLocalStorage()">2. Check LocalStorage</button>
+        <button class="primary" onclick="initializeWebLLM()">3. Initialize Web LLM</button>
+        <button class="primary" onclick="testQuiz()">4. Generate Test Quiz</button>
+        <button class="secondary" onclick="clearLogs()">Clear Logs</button>
+      </div>
+
+      <div class="log-area" id="log-area"></div>
+    </div>
+  </main>
+
+  <script type="module" src="web-llm-bridge.js"></script>
+  <script defer src="script.js"></script>
+  <script defer>
+    function log(message, color = '#00ff00') {
+      const logArea = document.getElementById('log-area');
+      const line = document.createElement('div');
+      line.className = 'log-line';
+      line.style.color = color;
+      line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logArea.appendChild(line);
+      logArea.scrollTop = logArea.scrollHeight;
+      console.log(message);
+    }
+
+    function clearLogs() {
+      document.getElementById('log-area').innerHTML = '';
+    }
+
+    function checkLocalStorage() {
+      log('=== CHECKING LOCALSTORAGE ===', '#ffff00');
+
+      const aiMode = localStorage.getItem('ai_mode');
+      const modelReady = localStorage.getItem('webllm_model_ready');
+      const currentModel = localStorage.getItem('webllm_current_model');
+      const savedModel = localStorage.getItem('webllm_model');
+
+      log('ai_mode: ' + aiMode, aiMode === 'webllm' ? '#00ff00' : '#ffaa00');
+      log('webllm_model_ready: ' + modelReady, modelReady === 'true' ? '#00ff00' : '#ff0000');
+      log('webllm_current_model: ' + currentModel);
+      log('webllm_model: ' + savedModel);
+
+      if (aiMode !== 'webllm') {
+        log('❌ AI mode is not set to webllm!', '#ff0000');
+        log('Action: Go to Profile and enable "Use Web LLM"', '#ffaa00');
+      }
+
+      if (modelReady !== 'true') {
+        log('❌ Model is not marked as ready!', '#ff0000');
+        log('Action: Click button 3 to initialize Web LLM', '#ffaa00');
+      }
+
+      log('=== LOCALSTORAGE CHECK COMPLETE ===', '#ffff00');
+    }
+
+    async function checkStatus() {
+      log('=== CHECKING STATUS ===', '#ffff00');
+
+      // Check localStorage
+      const aiMode = localStorage.getItem('ai_mode');
+      const modelReady = localStorage.getItem('webllm_model_ready');
+      log(`localStorage ai_mode: ${aiMode}`);
+      log(`localStorage webllm_model_ready: ${modelReady}`);
+
+      // Check WebLLMBridge
+      if (window.WebLLMBridge) {
+        log('✅ WebLLMBridge class is loaded', '#00ff00');
+      } else {
+        log('❌ WebLLMBridge class NOT loaded', '#ff0000');
+      }
+
+      // Check quizEngineIntegration
+      if (window.quizEngineIntegration) {
+        log('✅ quizEngineIntegration exists', '#00ff00');
+
+        const bridge = window.quizEngineIntegration.llmBridge;
+        if (bridge) {
+          log('✅ llmBridge exists', '#00ff00');
+          log(`   - useWebLLM: ${bridge.useWebLLM}`);
+          log(`   - useBrowserAI: ${bridge.useBrowserAI}`);
+          log(`   - useClaudeAPI: ${bridge.useClaudeAPI}`);
+          log(`   - ready: ${bridge.ready}`);
+          log(`   - isReady(): ${bridge.isReady()}`);
+
+          if (bridge.webLLMBridge) {
+            log('✅ webLLMBridge instance exists', '#00ff00');
+            log(`   - ready: ${bridge.webLLMBridge.ready}`);
+            log(`   - engine: ${bridge.webLLMBridge.engine ? 'created' : 'null'}`);
+          } else {
+            log('❌ webLLMBridge instance NOT created', '#ff0000');
+          }
+        } else {
+          log('❌ llmBridge NOT found', '#ff0000');
+        }
+
+        const engine = window.quizEngineIntegration.engineSelector.chooseEngine();
+        log(`Engine selected: ${engine}`, engine === 'LLM' ? '#00ff00' : '#ffaa00');
+      } else {
+        log('❌ quizEngineIntegration NOT found', '#ff0000');
+      }
+
+      log('=== STATUS CHECK COMPLETE ===', '#ffff00');
+    }
+
+    async function initializeWebLLM() {
+      log('=== INITIALIZING WEB LLM ===', '#ffff00');
+
+      if (!window.WebLLMBridge) {
+        log('❌ ERROR: WebLLMBridge not loaded!', '#ff0000');
+        return;
+      }
+
+      if (!window.quizEngineIntegration || !window.quizEngineIntegration.llmBridge) {
+        log('❌ ERROR: Quiz engine not initialized!', '#ff0000');
+        return;
+      }
+
+      try {
+        log('Creating progress callback...');
+        const onProgress = (progress) => {
+          log(`⏳ ${progress.text} - ${Math.round((progress.progress || 0) * 100)}%`, '#00aaff');
+        };
+
+        log('Calling initializeWebLLM...');
+        const success = await window.quizEngineIntegration.llmBridge.initializeWebLLM(onProgress);
+
+        if (success) {
+          log('✅ SUCCESS! Web LLM initialized!', '#00ff00');
+          localStorage.setItem('webllm_model_ready', 'true');
+          log('Saved to localStorage');
+
+          // Check status again
+          setTimeout(() => checkStatus(), 500);
+        } else {
+          log('❌ FAILED: initializeWebLLM returned false', '#ff0000');
+        }
+      } catch (error) {
+        log(`❌ ERROR: ${error.message}`, '#ff0000');
+        log(`Stack: ${error.stack}`, '#ff0000');
+      }
+
+      log('=== INITIALIZATION ATTEMPT COMPLETE ===', '#ffff00');
+    }
+
+    async function testQuiz() {
+      log('=== TESTING QUIZ GENERATION ===', '#ffff00');
+
+      try {
+        log('Calling generateEnhancedQuiz...');
+        const quiz = await window.generateEnhancedQuiz(
+          'Photosynthesis',
+          'easy',
+          2,
+          'Photosynthesis is the process by which plants convert light energy into chemical energy. Chlorophyll is the green pigment that absorbs light.'
+        );
+
+        log('✅ Quiz generated!', '#00ff00');
+        log(`Source: ${quiz.metadata.source}`, quiz.metadata.source === 'web-llm' ? '#00ff00' : '#ffaa00');
+        log(`Questions: ${quiz.questions.length}`);
+        log(`Topic: ${quiz.topic}`);
+        log(JSON.stringify(quiz, null, 2), '#aaaaaa');
+      } catch (error) {
+        log(`❌ ERROR: ${error.message}`, '#ff0000');
+        log(`Stack: ${error.stack}`, '#ff0000');
+      }
+
+      log('=== QUIZ TEST COMPLETE ===', '#ffff00');
+    }
+
+    // Auto-check on load
+    setTimeout(() => {
+      log('Page loaded. Click buttons to test AI.', '#ffff00');
+      checkStatus();
+    }, 1500);
+  </script>
+</body>
+</html>

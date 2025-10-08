@@ -1,0 +1,79 @@
+# GBNF Grammar for Quiz Generation (llama.cpp)
+# Ensures valid JSON output for quiz payloads
+
+root ::= quiz_payload
+
+quiz_payload ::= "{" ws topic ws "," ws difficulty ws "," ws questions ws "," ws metadata ws "}"
+
+topic ::= "\"topic\"" ws ":" ws string
+
+difficulty ::= "\"difficulty\"" ws ":" ws difficulty_value
+
+difficulty_value ::= "\"easy\"" | "\"medium\"" | "\"hard\""
+
+questions ::= "\"questions\"" ws ":" ws "[" ws question_list ws "]"
+
+question_list ::= question | question ws "," ws question_list
+
+question ::= multiple_choice | short_answer | fill_in_blank
+
+multiple_choice ::= "{" ws id ws "," ws type_mcq ws "," ws prompt ws "," ws options ws "," ws correct_answer ws "," ws explanation ws "}"
+
+type_mcq ::= "\"type\"" ws ":" ws "\"multiple_choice\""
+
+short_answer ::= "{" ws id ws "," ws type_saq ws "," ws prompt ws "," ws sample_answer ws "," ws rubric ws "}"
+
+type_saq ::= "\"type\"" ws ":" ws "\"short_answer\""
+
+fill_in_blank ::= "{" ws id ws "," ws type_fib ws "," ws prompt ws "," ws correct_answer ws "," ws explanation ws "}"
+
+type_fib ::= "\"type\"" ws ":" ws "\"fill_in_blank\""
+
+id ::= "\"id\"" ws ":" ws string
+
+prompt ::= "\"prompt\"" ws ":" ws string
+
+options ::= "\"options\"" ws ":" ws "[" ws option_list ws "]"
+
+option_list ::= option | option ws "," ws option_list
+
+option ::= "{" ws value ws "," ws label ws "}"
+
+value ::= "\"value\"" ws ":" ws string
+
+label ::= "\"label\"" ws ":" ws string
+
+correct_answer ::= "\"correctAnswer\"" ws ":" ws string
+
+explanation ::= "\"explanation\"" ws ":" ws string
+
+sample_answer ::= "\"sampleAnswer\"" ws ":" ws string
+
+rubric ::= "\"rubric\"" ws ":" ws "[" ws criterion_list ws "]"
+
+criterion_list ::= criterion | criterion ws "," ws criterion_list
+
+criterion ::= "{" ws criterion_name ws "," ws points ws "," ws keywords ws "}"
+
+criterion_name ::= "\"criterion\"" ws ":" ws string
+
+points ::= "\"points\"" ws ":" ws number
+
+keywords ::= "\"keywords\"" ws ":" ws "[" ws keyword_list ws "]"
+
+keyword_list ::= string | string ws "," ws keyword_list
+
+metadata ::= "\"metadata\"" ws ":" ws "{" ws source ws "," ws generated_at ws "," ws seed ws "}"
+
+source ::= "\"source\"" ws ":" ws source_value
+
+source_value ::= "\"device-llm\"" | "\"rules\""
+
+generated_at ::= "\"generatedAt\"" ws ":" ws string
+
+seed ::= "\"seed\"" ws ":" ws number
+
+# Basic types
+string ::= "\"" [^"]* "\""
+number ::= [0-9]+
+ws ::= [ \t\n\r]*

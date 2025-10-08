@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quizzes - StudyHive</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/png" href="StudyHiveLogo.png">
+  <meta name="theme-color" content="#f7f3eb">
+    <script>
+      // Apply theme immediately to prevent flash
+      (function() {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        if (savedTheme === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+          const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+          if (metaThemeColor) {
+            metaThemeColor.setAttribute('content', '#0a1624');
+          }
+        }
+      })();
+    </script>
+</head>
+<body>
+  <main class="app">
+    <header class="app__header">
+      <div class="app__header-top">
+        <div class="app__brand">
+          <img src="StudyHiveLogo.png" alt="StudyHive logo" class="app__logo">
+          <h1>StudyHive</h1>
+        </div>
+        <a href="profile.html" class="profile-button" aria-label="Profile">
+          <span class="profile-button__avatar">NE</span>
+        </a>
+      </div>
+      <p class="app__tagline">Create and take quizzes based on your notes.</p>
+      <nav class="app__nav" aria-label="Primary">
+        <a class="app__nav-link" href="index.html">Focus Timer</a>
+        <a class="app__nav-link" href="courses.html">Courses</a>
+        <a class="app__nav-link" href="notes.html">Notes</a>
+        <a class="app__nav-link" href="cheatsheets.html">Cheat Sheets</a>
+        <a class="app__nav-link app__nav-link--active" href="quizzes.html" aria-current="page">Quizzes</a>
+        <a class="app__nav-link" href="history.html">History</a>
+      </nav>
+    </header>
+
+    <section class="quizzes">
+      <div class="quizzes__header">
+        <h2>Quiz Generator</h2>
+        <p class="quizzes__intro">Choose between AI-powered generation or rule-based questions.</p>
+      </div>
+
+        <!-- Quiz Creation Section -->
+        <section class="quiz-creation" id="quiz-creation">
+          <div class="quiz-creation__form">
+            <h3>Create New Quiz</h3>
+            <form id="quiz-form" class="quiz-form">
+              <div class="quiz-form__group">
+                <label for="quiz-course" class="quiz-form__label">Select Course (Optional)</label>
+                <select id="quiz-course" name="courseId" class="quiz-form__select">
+                  <option value="">-- No Course Selected --</option>
+                </select>
+                <p class="quiz-form__help">Choose a course to filter notes and set context.</p>
+              </div>
+
+              <div class="quiz-form__group">
+                <label for="quiz-note" class="quiz-form__label">Select Note (Optional)</label>
+                <select id="quiz-note" name="noteId" class="quiz-form__select">
+                  <option value="">-- Select a note or paste below --</option>
+                </select>
+                <p class="quiz-form__help">Choose a note to auto-fill the content below.</p>
+              </div>
+
+              <div class="quiz-form__group">
+                <label for="quiz-topic" class="quiz-form__label">Topic</label>
+                <input type="text" id="quiz-topic" name="topic" class="quiz-form__input"
+                       placeholder="e.g., Photosynthesis, Calculus, World War II" required>
+              </div>
+
+              <div class="quiz-form__group">
+                <label for="quiz-notes" class="quiz-form__label">Notes Content</label>
+                <textarea id="quiz-notes" name="notes" class="quiz-form__textarea"
+                          placeholder="Paste your notes here or select a note above to generate questions based on them..."
+                          rows="8" required></textarea>
+              </div>
+
+              <div class="quiz-form__group">
+                <label for="quiz-difficulty" class="quiz-form__label">Difficulty</label>
+                <select id="quiz-difficulty" name="difficulty" class="quiz-form__select" required>
+                  <option value="easy">Easy</option>
+                  <option value="medium" selected>Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+                <p class="quiz-form__help">Choose the difficulty level for your quiz questions.</p>
+              </div>
+
+              <div class="quiz-form__group">
+                <label for="quiz-questions" class="quiz-form__label">Number of Questions</label>
+                <input type="number" id="quiz-questions" name="numQuestions" class="quiz-form__input"
+                       min="1" max="20" value="5" required>
+              </div>
+
+              <!-- Hidden engine field - always use Rules Engine -->
+              <input type="hidden" id="quiz-engine" name="engine" value="rules" />
+
+              <div class="quiz-form__actions">
+                <button type="submit" class="primary" id="generate-quiz">
+                  <span class="button-text">Generate Quiz</span>
+                  <span class="button-spinner" style="display: none;">⏳</span>
+                </button>
+                <button type="button" class="secondary" id="clear-form">Clear Form</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- Quiz Display Section -->
+        <section class="quiz-display" id="quiz-display" style="display: none;">
+          <div class="quiz-display__header">
+            <h3 id="quiz-title">Quiz Title</h3>
+            <div class="quiz-display__meta">
+              <span class="quiz-meta__item" id="quiz-difficulty-display">Medium</span>
+              <span class="quiz-meta__item" id="quiz-engine-display">AI Boost</span>
+              <span class="quiz-meta__item" id="quiz-questions-count">5 questions</span>
+            </div>
+          </div>
+
+          <div class="quiz-display__content">
+            <div class="quiz-progress">
+              <div class="quiz-progress__bar">
+                <div class="quiz-progress__fill" id="quiz-progress-fill"></div>
+              </div>
+              <span class="quiz-progress__text" id="quiz-progress-text">Question 1 of 5</span>
+            </div>
+
+            <div class="quiz-questions" id="quiz-questions-container">
+              <!-- Questions will be dynamically inserted here -->
+            </div>
+
+            <div class="quiz-actions">
+              <button class="secondary" id="previous-question" disabled>Previous</button>
+              <button class="primary" id="next-question">Next</button>
+              <button class="primary" id="finish-quiz" style="display: none;">Finish Quiz</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Quiz Results Section -->
+        <section class="quiz-results" id="quiz-results" style="display: none;">
+          <div class="quiz-results__header">
+            <h3>Quiz Results</h3>
+            <div class="quiz-results__score">
+              <span class="score-value" id="final-score">0</span>
+              <span class="score-separator">/</span>
+              <span class="score-max" id="max-score">0</span>
+            </div>
+          </div>
+
+          <div class="quiz-results__content">
+            <div class="results-summary">
+              <div class="summary-item">
+                <span class="summary-label">Correct Answers:</span>
+                <span class="summary-value" id="correct-count">0</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Incorrect Answers:</span>
+                <span class="summary-value" id="incorrect-count">0</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Percentage:</span>
+                <span class="summary-value" id="percentage">0%</span>
+              </div>
+            </div>
+
+            <div class="results-breakdown" id="results-breakdown">
+              <!-- Individual question results will be inserted here -->
+            </div>
+
+            <div class="quiz-results__actions">
+              <button class="primary" id="retake-quiz">Retake Quiz</button>
+              <button class="secondary" id="new-quiz">Create New Quiz</button>
+              <button class="secondary" id="view-answers">View Answers</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Quiz History Section -->
+        <section class="quiz-history" id="quiz-history">
+          <h3>Recent Quizzes</h3>
+          <div class="quiz-history__list" id="quiz-history-list">
+            <div class="quiz-history__empty">
+              <p>No quizzes taken yet. Create your first quiz above!</p>
+            </div>
+          </div>
+        </section>
+    </section>
+  </main>
+
+  <script type="module" src="web-llm-bridge.js"></script>
+  <script defer src="script.js"></script>
+  <script defer src="quiz-engine.js"></script>
+</body>
+</html>

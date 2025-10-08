@@ -1,0 +1,47 @@
+# GBNF Grammar for Quiz Grading (llama.cpp)
+# Ensures valid JSON output for grade payloads
+
+root ::= grade_payload
+
+grade_payload ::= "{" ws question_id ws "," ws total_score ws "," ws max_score ws "," ws breakdown ws "," ws feedback ws "," ws metadata ws "}"
+
+question_id ::= "\"questionId\"" ws ":" ws string
+
+total_score ::= "\"totalScore\"" ws ":" ws number
+
+max_score ::= "\"maxScore\"" ws ":" ws number
+
+breakdown ::= "\"breakdown\"" ws ":" ws "[" ws criterion_list ws "]"
+
+criterion_list ::= criterion | criterion ws "," ws criterion_list
+
+criterion ::= "{" ws criterion_name ws "," ws awarded_points ws "," ws max_points ws "," ws reasoning ws "," ws keywords ws "}"
+
+criterion_name ::= "\"criterion\"" ws ":" ws string
+
+awarded_points ::= "\"awardedPoints\"" ws ":" ws number
+
+max_points ::= "\"maxPoints\"" ws ":" ws number
+
+reasoning ::= "\"reasoning\"" ws ":" ws string
+
+keywords ::= "\"keywords\"" ws ":" ws "[" ws keyword_list ws "]"
+
+keyword_list ::= string | string ws "," ws keyword_list
+
+feedback ::= "\"feedback\"" ws ":" ws string
+
+metadata ::= "\"metadata\"" ws ":" ws "{" ws source ws "," ws graded_at ws "," ws processing_time ws "}"
+
+source ::= "\"source\"" ws ":" ws source_value
+
+source_value ::= "\"device-llm\"" | "\"rules\""
+
+graded_at ::= "\"gradedAt\"" ws ":" ws string
+
+processing_time ::= "\"processingTimeMs\"" ws ":" ws number
+
+# Basic types
+string ::= "\"" [^"]* "\""
+number ::= [0-9]+ ( "." [0-9]+ )?
+ws ::= [ \t\n\r]*

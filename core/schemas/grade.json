@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "GradePayload",
+  "description": "Stable contract for quiz grading responses",
+  "required": ["questionId", "totalScore", "maxScore", "breakdown"],
+  "properties": {
+    "questionId": {
+      "type": "string",
+      "description": "ID of the question being graded"
+    },
+    "totalScore": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Total points awarded"
+    },
+    "maxScore": {
+      "type": "number",
+      "minimum": 1,
+      "description": "Maximum possible points"
+    },
+    "breakdown": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Per-criterion scoring breakdown",
+      "items": {
+        "type": "object",
+        "required": ["criterion", "awardedPoints", "maxPoints", "reasoning"],
+        "properties": {
+          "criterion": {
+            "type": "string",
+            "minLength": 5,
+            "description": "Name of the grading criterion"
+          },
+          "awardedPoints": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Points awarded for this criterion"
+          },
+          "maxPoints": {
+            "type": "number",
+            "minimum": 1,
+            "description": "Maximum points for this criterion"
+          },
+          "reasoning": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500,
+            "description": "Explanation for the score"
+          },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Keywords found or missing in the answer"
+          }
+        }
+      }
+    },
+    "feedback": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 1000,
+      "description": "Overall feedback for the student"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": ["device-llm", "rules"],
+          "description": "Engine that graded this answer"
+        },
+        "gradedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "processingTimeMs": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Time taken to grade in milliseconds"
+        }
+      }
+    }
+  }
+}
