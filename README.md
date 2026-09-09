@@ -1,5 +1,21 @@
 # 🐝 StudyHive
 
+## Current browser app
+
+The reviewed React/TypeScript browser app is saved in [studyhive-web/](studyhive-web/). It includes the persistence, editor, timer, study workflow, and dependency fixes completed in September 2026.
+
+```sh
+cd studyhive-web
+npm ci
+npm run dev
+```
+
+See its [README](studyhive-web/README.md) and [publication/security notes](studyhive-web/PUBLICATION.md). The existing root application and native prototypes remain historical implementations; the browser review does not cover them. Old Electron release binaries are not included in this update.
+
+The documentation below describes the earlier root application.
+
+---
+
 **AI-Powered Study Management App with Pomodoro Timer, Intelligent Quizzes, and Note Organization**
 
 StudyHive is a comprehensive study productivity application that combines time management, note-taking, and AI-powered learning tools to help students study smarter, not harder.

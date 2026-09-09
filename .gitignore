@@ -34,3 +34,6 @@ yarn-error.log*
 
 # Tauri
 src-tauri/target/
+
+# Preserve the reviewed browser app dependency lockfile
+!/studyhive-web/package-lock.json

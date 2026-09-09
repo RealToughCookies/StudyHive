@@ -1,0 +1,48 @@
+{
+  "name": "studyhive",
+  "version": "2.0.0",
+  "description": "StudyHive - AI-Powered Study Productivity Web App",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "node tests/run.mjs"
+  },
+  "keywords": [
+    "react",
+    "typescript",
+    "study",
+    "productivity",
+    "ai",
+    "web"
+  ],
+  "author": "StudyHive",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "lucide-react": "^0.294.0",
+    "openai": "^4.20.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "sql.js": "^1.10.3",
+    "zustand": "^4.4.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/typography": "^0.5.19",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@types/sql.js": "^1.4.9",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.16",
+    "esbuild": "^0.28.2",
+    "jsdom": "^26.1.0",
+    "postcss": "^8.4.32",
+    "react-test-renderer": "^18.2.0",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.3",
+    "vite": "^6.4.3"
+  }
+}
