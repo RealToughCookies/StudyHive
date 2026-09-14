@@ -28,4 +28,15 @@ The app is running locally; it has not been publicly hosted. Production SMTP, th
 
 The migration was applied manually and is not registered in Supabase CLI migration history. **Do not rerun the initial migration on this project.** When adopting the CLI deployment workflow, inspect the remote schema and reconcile migration history before pushing additional migrations.
 
-The verified cloud foundation was pushed to GitHub as `5adbe6c` on September 14. The Pro implementation is tracked separately; its migration and Edge Functions have not yet been deployed. Do not publish `.env.local`, historical desktop releases or generated build output.
+The verified cloud foundation was pushed to GitHub as `5adbe6c` on September 14. The Pro implementation is tracked separately; see the September 14 deployment record below. Do not publish `.env.local`, historical desktop releases or generated build output.
+
+## Pro backend deployment — September 14
+
+- Saved and parsed a local JSON snapshot of all 12 existing application tables before migration. It contains 16 notes and two classes and is kept outside source control in Downloads as `StudyHive-application-backup-20260914.json`. This is an application-data snapshot, not a full PostgreSQL/Auth/Storage disaster-recovery backup.
+- Applied only `20260914000000_pro_services.sql` through the SQL editor after exact clipboard comparison with the tested source. Supabase reported success; a separate read verified all four new tables have RLS, billing data is unreadable by authenticated clients, quota updates are protected, reservation RPC execution is server-only, and anonymous scheduled review is denied. Existing note/class counts remained 16/2.
+- Deployed `pro-service` and `stripe-webhook` through the dashboard from bundles of the committed TypeScript source. Each bundle was compared exactly before deployment. Disabled the legacy JWT gateway check as specified by `supabase/config.toml`; handlers retain verified Supabase Auth and Stripe HMAC authentication respectively.
+- Saved `APP_ORIGIN=http://127.0.0.1:5173`. No provider keys were available or saved. AI allowance remains zero.
+- Live HTTP checks passed: allowed preflight 200, missing token 401, forged token 401, foreign origin 403, and unconfigured webhook 503. These checks made no provider calls.
+- Stripe and OpenAI account sign-in, test price/portal/webhook setup, private server-key entry, explicit model selection, test allowance and end-to-end provider checks remain pending. Real payments remain disabled by the deployed code.
+
+Both SQL migrations were applied manually; neither should be replayed through a CLI push without first reconciling migration history.

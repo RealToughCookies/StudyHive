@@ -1,6 +1,6 @@
 # Pro implementation and test setup
 
-The Pro source is implemented but **not yet deployed or enabled on the live project**. Checkout and webhooks accept Stripe test mode only. The AI allowance defaults to zero. No subscription price is hardcoded or publicly promised.
+The Pro migration and both Edge Functions were deployed to the connected Supabase project on September 14, 2026. **Provider credentials are still missing, so checkout and AI generation are not enabled.** Checkout and webhooks accept Stripe test mode only. The AI allowance defaults to zero. No subscription price is hardcoded or publicly promised.
 
 ## Included
 
@@ -13,7 +13,7 @@ The Pro source is implemented but **not yet deployed or enabled on the live proj
 
 ## Deployment sequence
 
-1. Save a database backup. The original cloud migration was already applied manually. **Do not replay it.** Apply only `supabase/migrations/20260914000000_pro_services.sql` after reviewing it. If adopting Supabase CLI migration management, reconcile the existing migration history first.
+1. Both migrations have already been applied manually to the connected project. **Do not replay either migration.** Before future schema changes, save a fresh backup. Reconcile existing migration history before adopting Supabase CLI migration management.
 2. Set the server secrets described in `supabase/.env.example`. Use a Stripe **test** secret (`sk_test_...`) and an active recurring test Price ID. Configure the Stripe customer portal in test mode. Keep your AI key out of the browser, GitHub, and chat. Select an OpenAI model after quality and cost checks; the deployment refuses to generate without an explicit model.
 3. Deploy `pro-service` and `stripe-webhook` using Supabase CLI with `supabase/config.toml`. Platform JWT verification is disabled because `pro-service` independently verifies user tokens with Supabase Auth, while Stripe uses HMAC. Never remove either handler's verification.
 4. Register the webhook endpoint at `/functions/v1/stripe-webhook` for `customer.subscription.created`, `.updated`, `.deleted`, `checkout.session.completed`, `invoice.paid`, and `invoice.payment_failed`. Set its signing secret. Failed/busy reconciliation returns a retryable failure; a crashed lease expires in 90 seconds.
