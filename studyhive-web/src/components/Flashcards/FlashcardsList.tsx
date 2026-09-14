@@ -1,3 +1,5 @@
+import ScheduledReview from './ScheduledReview'
+import {generateFromSavedNote,isPro} from '../../services/pro'
 import { cloudClient } from '../../services/cloud/client'
 import { studyData } from '../../services/studyData'
 import { notePlainText } from '../../services/noteContent'
@@ -13,6 +15,7 @@ type DeckWithCount = FlashcardDeck & { card_count: number }
 
 const FlashcardsList = () => {
   const { currentUser, settings } = useStore()
+  const [scheduled,setScheduled]=useState(false)
   const [decks, setDecks] = useState<DeckWithCount[]>([])
   const [activeDeck, setActiveDeck] = useState<DeckWithCount | null>(null)
   const [deckCards, setDeckCards] = useState<Flashcard[]>([])
@@ -167,7 +170,8 @@ const FlashcardsList = () => {
   const generateFromNote = async (note: Note) => {
     if (!currentUser) return
     if (cloudClient) {
-      alert('Pro AI study tools are coming soon. Your manual study tools are available now.')
+      setIsGenerating(true)
+      try {await generateFromSavedNote('flashcards',note.id);setShowGenerateModal(false);await loadDecks()} catch(e){alert(e instanceof Error?e.message:'Generation failed.')} finally{setIsGenerating(false)}
       return
     }
     if (!settings?.openai_api_key) {
@@ -193,6 +197,8 @@ const FlashcardsList = () => {
     deck.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
+  if(scheduled && activeDeck)return <ScheduledReview deckId={activeDeck.id} onExit={()=>setScheduled(false)}/>
+
   // Study view
   if (isStudying && activeDeck) {
     return (
@@ -212,6 +218,7 @@ const FlashcardsList = () => {
     return (
       <div className="p-8 h-full overflow-y-auto">
         <div className="max-w-4xl mx-auto">
+          {cloudClient && <div className="border rounded-xl p-4 mb-6 space-y-3"><label className="flex gap-3 items-center"><input type="checkbox" checked={!!activeDeck.spaced_repetition_enabled} disabled={!isPro()&&!activeDeck.spaced_repetition_enabled} onChange={async e=>{const enabled=e.target.checked;const {error}=await cloudClient!.from('flashcard_decks').update({spaced_repetition_enabled:enabled}).eq('id',activeDeck.id);if(error){alert(error.message);return}setActiveDeck({...activeDeck,spaced_repetition_enabled:enabled});loadDecks()}}/>Optional spaced repetition · Pro</label><p className="text-sm text-gray-600">Use normal study anytime. Scheduling only changes when you rate a card in scheduled review.</p>{activeDeck.spaced_repetition_enabled&&isPro()&&<button className="btn-secondary" onClick={()=>setScheduled(true)}>Review due cards</button>}</div>}
           {/* Header */}
           <div className="flex items-center gap-4 mb-8">
             <button

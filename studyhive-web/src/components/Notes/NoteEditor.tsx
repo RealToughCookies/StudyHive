@@ -1,3 +1,4 @@
+import {generateFromSavedNote} from '../../services/pro'
 import { cloudClient } from '../../services/cloud/client'
 import { studyData } from '../../services/studyData'
 import { saveFlashcardDeck, assertActiveAccount } from '../../services/studyMaterials'
@@ -873,7 +874,13 @@ const NoteEditor = ({ note, classes = [], onBack, onUpdate }: NoteEditorProps) =
       return
     }
     if (cloudClient) {
-      alert('Pro AI study tools are coming soon. Your manual study tools are available now.')
+      if (!note?.id) {alert('Save your note first.');return}
+      setIsGenerating(true)
+      try {
+        if (!await saveNote()) return
+        await generateFromSavedNote('flashcards',note.id)
+        alert('Your generated material is saved. Open Notes, Flashcards or Quizzes to study it.')
+      } catch(e) {alert(e instanceof Error?e.message:'Generation failed.')} finally {setIsGenerating(false)}
       return
     }
     if (!settings?.openai_api_key) {
@@ -902,7 +909,13 @@ const NoteEditor = ({ note, classes = [], onBack, onUpdate }: NoteEditorProps) =
       return
     }
     if (cloudClient) {
-      alert('Pro AI study tools are coming soon. Your manual study tools are available now.')
+      if (!note?.id) {alert('Save your note first.');return}
+      setIsGenerating(true)
+      try {
+        if (!await saveNote()) return
+        await generateFromSavedNote('quiz',note.id)
+        alert('Your generated material is saved. Open Notes, Flashcards or Quizzes to study it.')
+      } catch(e) {alert(e instanceof Error?e.message:'Generation failed.')} finally {setIsGenerating(false)}
       return
     }
     if (!settings?.openai_api_key) {
@@ -932,7 +945,13 @@ const NoteEditor = ({ note, classes = [], onBack, onUpdate }: NoteEditorProps) =
       return
     }
     if (cloudClient) {
-      alert('Pro AI study tools are coming soon. Your manual study tools are available now.')
+      if (!note?.id) {alert('Save your note first.');return}
+      setIsGenerating(true)
+      try {
+        if (!await saveNote()) return
+        await generateFromSavedNote('guide',note.id)
+        alert('Your generated material is saved. Open Notes, Flashcards or Quizzes to study it.')
+      } catch(e) {alert(e instanceof Error?e.message:'Generation failed.')} finally {setIsGenerating(false)}
       return
     }
     if (!settings?.openai_api_key) {

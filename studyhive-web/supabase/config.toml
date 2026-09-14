@@ -1,0 +1,5 @@
+# Each handler authenticates independently: user tokens for pro-service; HMAC for Stripe.
+[functions.pro-service]
+verify_jwt = false
+[functions.stripe-webhook]
+verify_jwt = false

@@ -1,3 +1,4 @@
+import ProPanel from './ProPanel'
 import { cloudClient } from '../../services/cloud/client'
 import { useState } from 'react'
 import { useStore } from '../../store'
@@ -44,14 +45,7 @@ const UpgradeModal = ({ onClose }: UpgradeModalProps) => {
     premium: ['All Free Features', 'Premium Demo Account Label']
   }
 
-  if (cloudClient) return <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-6">
-    <section role="dialog" aria-modal="true" aria-labelledby="pro-title" className="bg-white rounded-2xl p-8 max-w-md space-y-4">
-      <h2 id="pro-title" className="text-2xl font-bold">StudyHive Pro is coming</h2>
-      <p>Pro will include AI notes from uploaded files, AI study materials, quizzes, and optional spaced repetition for flashcard decks.</p>
-      <p>Subscriptions are not available yet. No payment will be collected.</p>
-      <button className="btn-primary" onClick={onClose}>Continue studying</button>
-    </section>
-  </div>
+  if (cloudClient) return <ProPanel onClose={onClose}/>
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

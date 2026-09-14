@@ -28,4 +28,4 @@ The app is running locally; it has not been publicly hosted. Production SMTP, th
 
 The migration was applied manually and is not registered in Supabase CLI migration history. **Do not rerun the initial migration on this project.** When adopting the CLI deployment workflow, inspect the remote schema and reconcile migration history before pushing additional migrations.
 
-Local cloud-foundation source changes have not yet been pushed to GitHub. Do not publish `.env.local`, historical desktop releases or generated build output.
+The verified cloud foundation was pushed to GitHub as `5adbe6c` on September 14. The Pro implementation is tracked separately; its migration and Edge Functions have not yet been deployed. Do not publish `.env.local`, historical desktop releases or generated build output.

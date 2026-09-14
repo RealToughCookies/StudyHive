@@ -77,3 +77,7 @@ Free/Premium labels and the upgrade dialog demonstrate a local tier change. Ther
 - `tests/`: automated regression checks.
 
 See [BUGFIX-AUDIT.md](BUGFIX-AUDIT.md) for the latest bug audit and validation, and [BUILT.md](BUILT.md) for the current implementation status and remaining limitations.
+
+## Pro development milestone
+
+The Pro service implementation includes test-mode checkout/portal, verified webhooks, server AI with usage accounting, file-to-notes import, and optional spaced repetition. Provider deployment and credentials are still required; this does not enable real billing or AI by itself. See [Pro setup and remaining launch checks](docs/PRO_SETUP.md).

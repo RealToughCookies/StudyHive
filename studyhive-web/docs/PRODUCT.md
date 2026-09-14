@@ -15,8 +15,8 @@ Working defaults for the remaining implementation: text-based PDF, DOCX and TXT 
 
 ## Implementation stages
 
-1. **Cloud foundation (implemented, awaiting live provider setup):** authentication UI, private database/files, existing study-feature data access, session restoration, password recovery, server-enforced ownership, note edit conflict detection and Pro permission foundation.
-2. **Pro service:** payment checkout/portal, verified webhooks, server-owned subscription state, AI endpoints, usage accounting, private document extraction and editable generated notes. Add optional spaced-repetition study mode and scheduling.
+1. **Cloud foundation (connected and verified):** authentication UI, private database/files, existing study-feature data access, session restoration, password recovery, server-enforced ownership, note edit conflict detection and Pro permission foundation.
+2. **Pro service (implemented for testing; provider deployment/configuration pending, see [setup](PRO_SETUP.md)):** payment checkout/portal, verified webhooks, server-owned subscription state, AI endpoints, usage accounting, private document extraction and editable generated notes. Add optional spaced-repetition study mode and scheduling.
 3. **Launch completion:** import old local workspaces, account export/deletion, privacy/terms, quotas and abuse controls, responsive/accessibility review, live multi-account/email/payment checks, backups, monitoring and deployment.
 
 The old local demo remains explicitly selectable. Its local accounts, API-key feature and demo subscription labels are not production authentication, included Pro AI or real billing.

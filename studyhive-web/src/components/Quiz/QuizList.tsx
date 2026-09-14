@@ -1,3 +1,4 @@
+import {generateFromSavedNote} from '../../services/pro'
 import { cloudClient } from '../../services/cloud/client'
 import { studyData } from '../../services/studyData'
 import { notePlainText } from '../../services/noteContent'
@@ -79,7 +80,8 @@ const QuizList = () => {
     const note = notes.find(n => n.id === noteId)
     if (!note) return
     if (cloudClient) {
-      alert('Pro AI study tools are coming soon. Your manual study tools are available now.')
+      setIsGenerating(true)
+      try {await generateFromSavedNote('quiz',noteId);setShowGenerateModal(false);await loadQuizzes()} catch(e){alert(e instanceof Error?e.message:'Generation failed.')} finally{setIsGenerating(false)}
       return
     }
     if (!settings?.openai_api_key) {

@@ -59,6 +59,7 @@ export interface StickyNote {
 
 // Flashcard deck types
 export interface FlashcardDeck {
+  spaced_repetition_enabled?: boolean
   id: number
   user_id: number
   name: string

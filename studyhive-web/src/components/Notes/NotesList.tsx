@@ -1,3 +1,5 @@
+import { cloudClient } from '../../services/cloud/client'
+import AIImport from './AIImport'
 import { studyData } from '../../services/studyData'
 import { parseStoredDate } from '../../services/dates'
 import { useState, useEffect } from 'react'
@@ -8,6 +10,7 @@ import NoteEditor from './NoteEditor'
 
 const NotesList = () => {
   const { currentUser } = useStore()
+  const [showAIImport,setShowAIImport] = useState(false)
   const [notes, setNotes] = useState<Note[]>([])
   const [classes, setClasses] = useState<Class[]>([])
   const [selectedNote, setSelectedNote] = useState<Note | null>(null)
@@ -137,6 +140,8 @@ const NotesList = () => {
 
   return (
     <div className="p-8 h-full overflow-y-auto">
+      {showAIImport && <AIImport classes={classes} onClose={()=>setShowAIImport(false)} onCreated={async id=>{setShowAIImport(false);await loadNotes();const note=await studyData.getNote(id);if(note)setSelectedNote(note)}}/>}
+      {cloudClient && <button className="btn-secondary mb-4" onClick={()=>setShowAIImport(true)}>Import file with AI · Pro</button>}
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
