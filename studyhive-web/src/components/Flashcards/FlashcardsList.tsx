@@ -1,3 +1,5 @@
+import { cloudClient } from '../../services/cloud/client'
+import { studyData } from '../../services/studyData'
 import { notePlainText } from '../../services/noteContent'
 import { saveFlashcardDeck } from '../../services/studyMaterials'
 import { useState, useEffect } from 'react'
@@ -55,15 +57,7 @@ const FlashcardsList = () => {
   const loadDecks = async () => {
     if (!currentUser) return
     try {
-      const results = await window.electronAPI.db.query(
-        `SELECT d.*, COUNT(f.id) as card_count
-         FROM flashcard_decks d
-         LEFT JOIN flashcards f ON f.deck_id = d.id
-         WHERE d.user_id = ?
-         GROUP BY d.id
-         ORDER BY d.created_at DESC`,
-        [currentUser.id]
-      )
+      const results = await studyData.listDecks(currentUser.id)
       setDecks(results || [])
     } catch (error) {
       console.error('Failed to load decks:', error)
@@ -73,10 +67,7 @@ const FlashcardsList = () => {
   const loadClasses = async () => {
     if (!currentUser) return
     try {
-      const results = await window.electronAPI.db.query(
-        'SELECT * FROM classes WHERE user_id = ? ORDER BY name',
-        [currentUser.id]
-      )
+      const results = await studyData.listClasses(currentUser.id)
       setClasses(results || [])
     } catch (error) {
       console.error('Failed to load classes:', error)
@@ -86,10 +77,7 @@ const FlashcardsList = () => {
   const loadNotes = async () => {
     if (!currentUser) return
     try {
-      const results = await window.electronAPI.db.query(
-        'SELECT id, title, class_id, content FROM notes WHERE user_id = ? ORDER BY updated_at DESC',
-        [currentUser.id]
-      )
+      const results = await studyData.noteSummaries(currentUser.id)
       setNotes(results || [])
     } catch (error) {
       console.error('Failed to load notes:', error)
@@ -99,10 +87,7 @@ const FlashcardsList = () => {
   const openDeck = async (deck: DeckWithCount) => {
     setActiveDeck(deck)
     try {
-      const cards = await window.electronAPI.db.query(
-        'SELECT * FROM flashcards WHERE deck_id = ? ORDER BY created_at ASC',
-        [deck.id]
-      )
+      const cards = await studyData.deckCards(deck.id)
       setDeckCards(cards || [])
     } catch (error) {
       console.error('Failed to load deck cards:', error)
@@ -141,7 +126,7 @@ const FlashcardsList = () => {
   const deleteDeck = async (deckId: number) => {
     if (!confirm('Delete this deck and all its cards?')) return
     try {
-      await window.electronAPI.db.run('DELETE FROM flashcard_decks WHERE id = ?', [deckId])
+      await studyData.deleteDeck(deckId)
       if (activeDeck?.id === deckId) closeDeck()
       loadDecks()
     } catch (error) {
@@ -152,10 +137,7 @@ const FlashcardsList = () => {
   const addCardToDeck = async () => {
     if (!addFront.trim() || !addBack.trim() || !activeDeck || !currentUser) return
     try {
-      await window.electronAPI.db.run(
-        `INSERT INTO flashcards (user_id, deck_id, class_id, front, back, created_at) VALUES (?, ?, ?, ?, ?, datetime('now'))`,
-        [currentUser.id, activeDeck.id, activeDeck.class_id || null, addFront.trim(), addBack.trim()]
-      )
+      await studyData.createCard(currentUser.id, activeDeck.id, activeDeck.class_id || null, addFront.trim(), addBack.trim())
       setAddFront('')
       setAddBack('')
       setShowAddCard(false)
@@ -171,7 +153,7 @@ const FlashcardsList = () => {
   const deleteCard = async (cardId: number) => {
     if (!confirm('Delete this card?')) return
     try {
-      await window.electronAPI.db.run('DELETE FROM flashcards WHERE id = ?', [cardId])
+      await studyData.deleteCard(cardId)
       setDeckCards(cards => cards.filter(c => c.id !== cardId))
       if (activeDeck) {
         setActiveDeck({ ...activeDeck, card_count: Math.max(0, activeDeck.card_count - 1) })
@@ -184,6 +166,10 @@ const FlashcardsList = () => {
 
   const generateFromNote = async (note: Note) => {
     if (!currentUser) return
+    if (cloudClient) {
+      alert('Pro AI study tools are coming soon. Your manual study tools are available now.')
+      return
+    }
     if (!settings?.openai_api_key) {
       alert('Please add your OpenAI API key in Settings to use AI features.')
       return

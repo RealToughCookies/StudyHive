@@ -1,3 +1,4 @@
+import { studyData } from '../services/studyData'
 import { localDateKey, nextReminderDate } from '../services/dates'
 import { useEffect, useState } from 'react'
 import { useStore } from '../store'
@@ -43,25 +44,13 @@ const Dashboard = () => {
     if (!currentUser) return
 
     try {
-      const notes = await window.electronAPI.db.query(
-        'SELECT COUNT(*) as count FROM notes WHERE user_id = ?',
-        [currentUser.id]
-      )
+      const notes = await studyData.countNotes(currentUser.id)
 
-      const quizzes = await window.electronAPI.db.query(
-        'SELECT COUNT(*) as count FROM quizzes WHERE user_id = ?',
-        [currentUser.id]
-      )
+      const quizzes = await studyData.countQuizzes(currentUser.id)
 
-      const flashcards = await window.electronAPI.db.query(
-        'SELECT COUNT(*) as count FROM flashcards WHERE user_id = ?',
-        [currentUser.id]
-      )
+      const flashcards = await studyData.countCards(currentUser.id)
 
-      const sessions = await window.electronAPI.db.query(
-        'SELECT COUNT(*) as count FROM pomodoro_sessions WHERE user_id = ? AND completed = 1',
-        [currentUser.id]
-      )
+      const sessions = await studyData.countSessions(currentUser.id)
 
       setStats({
         totalNotes: notes[0]?.count || 0,
@@ -79,13 +68,7 @@ const Dashboard = () => {
 
     try {
       // Get all unique study dates
-      const studyDates = await window.electronAPI.db.query(
-        `SELECT DISTINCT DATE(completed_at, 'localtime') as study_date
-         FROM pomodoro_sessions
-         WHERE user_id = ? AND completed = 1
-         ORDER BY study_date DESC`,
-        [currentUser.id]
-      )
+      const studyDates = await studyData.studyDates(currentUser.id)
 
       if (!studyDates || studyDates.length === 0) {
         setStreak({ current: 0, longest: 0 })
@@ -151,12 +134,7 @@ const Dashboard = () => {
         date.setDate(date.getDate() - i)
         const dateStr = localDateKey(date)
 
-        const result = await window.electronAPI.db.query(
-          `SELECT COUNT(*) as sessions, COALESCE(SUM(duration_minutes), 0) as minutes
-           FROM pomodoro_sessions
-           WHERE user_id = ? AND completed = 1 AND DATE(completed_at, 'localtime') = ?`,
-          [currentUser.id, dateStr]
-        )
+        const result = await studyData.dailyFocus(currentUser.id, dateStr)
 
         activity.push({
           date: dateStr,
@@ -174,10 +152,7 @@ const Dashboard = () => {
   const loadReminders = async () => {
     if (!currentUser) return
     try {
-      const results = await window.electronAPI.db.query(
-        'SELECT * FROM reminders WHERE user_id = ? ORDER BY priority ASC',
-        [currentUser.id]
-      )
+      const results = await studyData.listReminders(currentUser.id)
       setReminders(results || [])
     } catch (error) {
       console.error('Failed to load reminders:', error)
@@ -202,23 +177,13 @@ const Dashboard = () => {
     try {
       if (editingReminder) {
         // Update existing reminder
-        await window.electronAPI.db.run(
-          `UPDATE reminders SET title = ?, description = ?, date = ?, time = ?, color = ?, repeat = ?, completed = ?, updated_at = datetime('now') WHERE id = ?`,
-          [data.title, data.description || null, data.date, data.time || null, data.color, data.repeat || null, data.completed ? 1 : 0, editingReminder.id]
-        )
+        await studyData.editReminder(data.title, data.description || null, data.date, data.time || null, data.color, data.repeat || null, data.completed ? 1 : 0, editingReminder.id)
       } else {
         // Create new reminder - get max priority and add 1
-        const maxPriority = await window.electronAPI.db.get(
-          'SELECT MAX(priority) as max FROM reminders WHERE user_id = ?',
-          [currentUser.id]
-        )
+        const maxPriority = await studyData.lastReminderPriority(currentUser.id)
         const newPriority = (maxPriority?.max ?? -1) + 1
 
-        await window.electronAPI.db.run(
-          `INSERT INTO reminders (user_id, title, description, date, time, color, priority, repeat, completed, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, datetime('now'), datetime('now'))`,
-          [currentUser.id, data.title, data.description || null, data.date, data.time || null, data.color, newPriority, data.repeat || null]
-        )
+        await studyData.createReminder(currentUser.id, data.title, data.description || null, data.date, data.time || null, data.color, newPriority, data.repeat || null)
       }
 
       await loadReminders()
@@ -232,7 +197,7 @@ const Dashboard = () => {
 
   const handleDeleteReminder = async (id: number) => {
     try {
-      await window.electronAPI.db.run('DELETE FROM reminders WHERE id = ?', [id])
+      await studyData.deleteReminder(id)
       await loadReminders()
       setShowReminderForm(false)
       setEditingReminder(null)
@@ -249,16 +214,10 @@ const Dashboard = () => {
       if (reminder.repeat) {
         // If repeating, create next occurrence and mark current as completed
         const nextDate = nextReminderDate(reminder.date, reminder.repeat)
-        await window.electronAPI.db.run(
-          `UPDATE reminders SET date = ?, updated_at = datetime('now') WHERE id = ?`,
-          [nextDate, id]
-        )
+        await studyData.repeatReminder(nextDate, id)
       } else {
         // Mark as completed
-        await window.electronAPI.db.run(
-          `UPDATE reminders SET completed = 1, updated_at = datetime('now') WHERE id = ?`,
-          [id]
-        )
+        await studyData.completeReminder(id)
       }
 
       await loadReminders()
@@ -271,10 +230,7 @@ const Dashboard = () => {
     try {
       // Update priorities in database
       for (const reminder of reorderedReminders) {
-        await window.electronAPI.db.run(
-          'UPDATE reminders SET priority = ? WHERE id = ?',
-          [reminder.priority, reminder.id]
-        )
+        await studyData.orderReminder(reminder.priority, reminder.id)
       }
       setReminders(prev => {
         // Update local state with new priorities

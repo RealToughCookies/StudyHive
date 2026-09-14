@@ -19,6 +19,7 @@
   "author": "StudyHive",
   "license": "MIT",
   "dependencies": {
+    "@supabase/supabase-js": "^2.116.0",
     "bcryptjs": "^2.4.3",
     "lucide-react": "^0.294.0",
     "openai": "^4.20.1",
@@ -30,6 +31,7 @@
     "zustand": "^4.4.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@tailwindcss/typography": "^0.5.19",
     "@types/bcryptjs": "^2.4.6",
     "@types/react": "^18.2.43",

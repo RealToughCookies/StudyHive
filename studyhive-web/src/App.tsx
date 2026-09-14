@@ -1,3 +1,5 @@
+import { cloudClient } from './services/cloud/client'
+import CloudSession from './components/Auth/CloudSession'
 import { useEffect } from 'react'
 import { useStore } from './store'
 import Layout from './components/Layout'
@@ -22,6 +24,8 @@ function App() {
 
     initApp()
   }, [])
+
+  if (cloudClient) return <CloudSession />
 
   // Show auth screens if not authenticated
   if (!isAuthenticated) {

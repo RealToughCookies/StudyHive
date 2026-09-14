@@ -1,3 +1,4 @@
+import { studyData } from '../../services/studyData'
 import { useState, useRef } from 'react'
 import { useStore } from '../../store'
 import { ArrowLeft, Check, X, ChevronRight, Trophy, RotateCcw } from 'lucide-react'
@@ -53,10 +54,7 @@ const QuizTaker = ({ quiz, onExit }: QuizTakerProps) => {
     const score = selectedAnswers.reduce((acc, answer, index) => acc + (answer === quiz.questions[index].correct ? 1 : 0), 0)
     if (currentUser) {
       try {
-        const result = await window.electronAPI.db.run(
-          'INSERT INTO quiz_attempts (quiz_id, user_id, score, total, answers, completed_at) VALUES (?, ?, ?, ?, ?, datetime(\'now\'))',
-          [quiz.id, currentUser.id, score, quiz.questions.length, JSON.stringify(selectedAnswers)]
-        )
+        const result = await studyData.saveQuizAttempt(quiz.id, currentUser.id, score, quiz.questions.length, JSON.stringify(selectedAnswers))
         setSavedAttemptId(result.lastInsertRowid)
       } catch (error) {
         console.error('Failed to save quiz attempt:', error)

@@ -1,3 +1,5 @@
+import { cloudClient } from '../../services/cloud/client'
+import { studyData } from '../../services/studyData'
 import { useState, useEffect, useRef } from 'react'
 import { useStore } from '../../store'
 import { Save, User, Palette, Bell, Key, Crown, Timer, Moon, Sun, Keyboard } from 'lucide-react'
@@ -130,19 +132,10 @@ const SettingsPanel = () => {
     try {
       const shortcutsJson = JSON.stringify(shortcuts)
 
-      await window.electronAPI.db.run(
-        `UPDATE settings
-         SET theme = ?, dark_mode = ?, notification_sound = ?, timer_sound = ?,
-             pause_on_blur = ?, auto_resume_on_focus = ?, openai_api_key = ?, shortcuts = ?
-         WHERE user_id = ?`,
-        [theme, darkMode ? 1 : 0, notificationSound ? 1 : 0,
-         timerSound ? 1 : 0, pauseOnBlur ? 1 : 0, autoResumeOnFocus ? 1 : 0, rememberApiKey ? apiKey.trim() : null, shortcutsJson, currentUser.id]
-      )
+      await studyData.saveSettings(theme, darkMode ? 1 : 0, notificationSound ? 1 : 0,
+         timerSound ? 1 : 0, pauseOnBlur ? 1 : 0, autoResumeOnFocus ? 1 : 0, rememberApiKey ? apiKey.trim() : null, shortcutsJson, currentUser.id)
 
-      const updatedSettings = await window.electronAPI.db.get(
-        'SELECT * FROM settings WHERE user_id = ?',
-        [currentUser.id]
-      )
+      const updatedSettings = await studyData.getSettings(currentUser.id)
 
       if (useStore.getState().currentUser?.id !== currentUser.id) return
       setSettings({ ...updatedSettings, openai_api_key: apiKey.trim(), remember_api_key: rememberApiKey })
@@ -385,7 +378,8 @@ const SettingsPanel = () => {
             </div>
           </div>
 
-          {/* OpenAI API Key */}
+          {/* API keys are only supported by the local demo. */}
+          {!cloudClient && <>
           <div className="bg-white p-6 rounded-xl shadow-md">
             <div className="flex items-center gap-3 mb-6">
               <Key className="w-6 h-6 text-primary" />
@@ -423,6 +417,7 @@ const SettingsPanel = () => {
               </p>
             </div>
           </div>
+          </>}
 
           {/* Save Button */}
           <button

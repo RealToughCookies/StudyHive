@@ -1,3 +1,4 @@
+import { studyData } from '../../services/studyData'
 import { parseStoredDate } from '../../services/dates'
 import { useState, useEffect } from 'react'
 import { useStore } from '../../store'
@@ -46,10 +47,7 @@ const ClassManager = () => {
   const loadClasses = async () => {
     if (!currentUser) return
     try {
-      const results = await window.electronAPI.db.query(
-        'SELECT * FROM classes WHERE user_id = ? ORDER BY name',
-        [currentUser.id]
-      )
+      const results = await studyData.listClasses(currentUser.id)
       setClasses(results || [])
     } catch (error) {
       console.error('Failed to load classes:', error)
@@ -60,18 +58,9 @@ const ClassManager = () => {
     if (!currentUser) return
     try {
       const [notes, flashcards, quizzes] = await Promise.all([
-        window.electronAPI.db.query(
-          'SELECT * FROM notes WHERE user_id = ? AND class_id = ? ORDER BY updated_at DESC',
-          [currentUser.id, classId]
-        ),
-        window.electronAPI.db.query(
-          'SELECT * FROM flashcards WHERE user_id = ? AND class_id = ? ORDER BY created_at DESC',
-          [currentUser.id, classId]
-        ),
-        window.electronAPI.db.query(
-          'SELECT * FROM quizzes WHERE user_id = ? AND class_id = ? ORDER BY created_at DESC',
-          [currentUser.id, classId]
-        ),
+        studyData.classNotes(currentUser.id, classId),
+        studyData.classCards(currentUser.id, classId),
+        studyData.classQuizzes(currentUser.id, classId),
       ])
       setClassItems({
         notes: notes || [],
@@ -87,10 +76,7 @@ const ClassManager = () => {
     if (!currentUser || !newClassName.trim()) return
 
     try {
-      await window.electronAPI.db.run(
-        'INSERT INTO classes (user_id, name, color) VALUES (?, ?, ?)',
-        [currentUser.id, newClassName.trim(), newClassColor]
-      )
+      await studyData.createClass(currentUser.id, newClassName.trim(), newClassColor)
       setNewClassName('')
       setNewClassColor(CLASS_COLORS[0])
       setIsCreating(false)
@@ -104,10 +90,7 @@ const ClassManager = () => {
     if (!editName.trim()) return
 
     try {
-      await window.electronAPI.db.run(
-        'UPDATE classes SET name = ?, color = ? WHERE id = ?',
-        [editName.trim(), editColor, id]
-      )
+      await studyData.renameClass(editName.trim(), editColor, id)
       setEditingId(null)
       loadClasses()
       // Update selected class if it was being edited
@@ -124,7 +107,7 @@ const ClassManager = () => {
 
     try {
       // Delete the class
-      await window.electronAPI.db.run('DELETE FROM classes WHERE id = ?', [id])
+      await studyData.deleteClass(id)
       loadClasses()
       if (selectedClass?.id === id) {
         setSelectedClass(null)

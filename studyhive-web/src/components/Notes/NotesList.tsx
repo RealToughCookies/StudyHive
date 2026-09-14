@@ -1,3 +1,4 @@
+import { studyData } from '../../services/studyData'
 import { parseStoredDate } from '../../services/dates'
 import { useState, useEffect } from 'react'
 import { useStore } from '../../store'
@@ -24,10 +25,7 @@ const NotesList = () => {
     if (!currentUser) return
 
     try {
-      const results = await window.electronAPI.db.query(
-        'SELECT * FROM notes WHERE user_id = ? ORDER BY updated_at DESC',
-        [currentUser.id]
-      )
+      const results = await studyData.listNotes(currentUser.id)
       setNotes(results || [])
     } catch (error) {
       console.error('Failed to load notes:', error)
@@ -37,10 +35,7 @@ const NotesList = () => {
   const loadClasses = async () => {
     if (!currentUser) return
     try {
-      const results = await window.electronAPI.db.query(
-        'SELECT * FROM classes WHERE user_id = ? ORDER BY name',
-        [currentUser.id]
-      )
+      const results = await studyData.listClasses(currentUser.id)
       setClasses(results || [])
     } catch (error) {
       console.error('Failed to load classes:', error)
@@ -51,26 +46,16 @@ const NotesList = () => {
     if (!currentUser) return
 
     try {
-      const result = await window.electronAPI.db.run(
-        `INSERT INTO notes (user_id, class_id, title, content, created_at, updated_at)
-         VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))`,
-        [currentUser.id, classId || null, 'Untitled Note', '']
-      )
+      const result = await studyData.createNote(currentUser.id, classId || null, 'Untitled Note', '')
 
       const noteId = Number(result.lastInsertRowid)
-      const newNote = await window.electronAPI.db.get(
-        'SELECT * FROM notes WHERE id = ?',
-        [noteId]
-      )
+      const newNote = await studyData.getNote(noteId)
 
       if (newNote) {
         setNotes([newNote, ...notes])
         setSelectedNote(newNote)
       } else {
-        const fallbackNote = await window.electronAPI.db.get(
-          'SELECT * FROM notes WHERE user_id = ? ORDER BY id DESC LIMIT 1',
-          [currentUser.id]
-        )
+        const fallbackNote = await studyData.latestNote(currentUser.id)
         if (fallbackNote) {
           setNotes([fallbackNote, ...notes])
           setSelectedNote(fallbackNote)
@@ -84,10 +69,7 @@ const NotesList = () => {
 
   const assignNoteToClass = async (noteId: number, classId: number | null) => {
     try {
-      await window.electronAPI.db.run(
-        'UPDATE notes SET class_id = ? WHERE id = ?',
-        [classId, noteId]
-      )
+      await studyData.assignNoteClass(classId, noteId)
       setNotes(notes.map(n => n.id === noteId ? { ...n, class_id: classId || undefined } : n))
       setClassMenuOpen(null)
     } catch (error) {
@@ -99,9 +81,9 @@ const NotesList = () => {
     if (!confirm('Delete this note? This cannot be undone.')) return
 
     try {
-      const attachments = await window.electronAPI.db.query('SELECT filename FROM note_attachments WHERE note_id = ?', [id])
-      await window.electronAPI.db.run('DELETE FROM notes WHERE id = ? AND user_id = ?', [id, currentUser?.id])
-      await Promise.all(attachments.map(attachment => window.electronAPI.file.deleteAttachment(attachment.filename)
+      const attachments = await studyData.attachmentFiles(id)
+      await studyData.deleteNote(id, currentUser?.id)
+      await Promise.all(attachments.map((attachment: { filename: string }) => window.electronAPI.file.deleteAttachment(attachment.filename)
         .catch(error => console.error('Failed to remove attachment file:', error))))
       setNotes(notes.filter((n) => n.id !== id))
       if (selectedNote?.id === id) {

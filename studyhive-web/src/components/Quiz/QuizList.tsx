@@ -1,3 +1,5 @@
+import { cloudClient } from '../../services/cloud/client'
+import { studyData } from '../../services/studyData'
 import { notePlainText } from '../../services/noteContent'
 import { parseStoredDate } from '../../services/dates'
 import { assertActiveAccount } from '../../services/studyMaterials'
@@ -29,10 +31,7 @@ const QuizList = () => {
   const loadClasses = async () => {
     if (!currentUser) return
     try {
-      const results = await window.electronAPI.db.query(
-        'SELECT * FROM classes WHERE user_id = ? ORDER BY name',
-        [currentUser.id]
-      )
+      const results = await studyData.listClasses(currentUser.id)
       setClasses(results || [])
     } catch (error) {
       console.error('Failed to load classes:', error)
@@ -43,10 +42,7 @@ const QuizList = () => {
 
   const assignQuizToClass = async (quizId: number, classId: number | null) => {
     try {
-      await window.electronAPI.db.run(
-        'UPDATE quizzes SET class_id = ? WHERE id = ?',
-        [classId, quizId]
-      )
+      await studyData.assignQuizClass(classId, quizId)
       setQuizzes(quizzes.map(q => q.id === quizId ? { ...q, class_id: classId || undefined } : q))
       setClassMenuOpen(null)
     } catch (error) {
@@ -57,10 +53,7 @@ const QuizList = () => {
   const loadQuizzes = async () => {
     if (!currentUser) return
     try {
-      const results = await window.electronAPI.db.query(
-        'SELECT * FROM quizzes WHERE user_id = ? ORDER BY created_at DESC',
-        [currentUser.id]
-      )
+      const results = await studyData.listQuizzes(currentUser.id)
       const quizzesWithParsedQuestions = (results || []).map((quiz: any) => ({
         ...quiz,
         questions: typeof quiz.questions === 'string' ? JSON.parse(quiz.questions) : quiz.questions
@@ -74,10 +67,7 @@ const QuizList = () => {
   const loadNotes = async () => {
     if (!currentUser) return
     try {
-      const results = await window.electronAPI.db.query(
-        'SELECT * FROM notes WHERE user_id = ? ORDER BY updated_at DESC',
-        [currentUser.id]
-      )
+      const results = await studyData.listNotes(currentUser.id)
       setNotes(results || [])
     } catch (error) {
       console.error('Failed to load notes:', error)
@@ -88,6 +78,10 @@ const QuizList = () => {
     if (!currentUser) return
     const note = notes.find(n => n.id === noteId)
     if (!note) return
+    if (cloudClient) {
+      alert('Pro AI study tools are coming soon. Your manual study tools are available now.')
+      return
+    }
     if (!settings?.openai_api_key) {
       alert('Please add your OpenAI API key in Settings to use AI features.')
       return
@@ -96,11 +90,7 @@ const QuizList = () => {
     try {
       const generatedQuestions = await generateQuiz(notePlainText(note.content), settings.openai_api_key)
       assertActiveAccount(currentUser.id)
-      await window.electronAPI.db.run(
-        `INSERT INTO quizzes (user_id, note_id, class_id, title, questions, created_at)
-         VALUES (?, ?, ?, ?, ?, datetime('now'))`,
-        [currentUser.id, noteId, note.class_id || null, `Quiz: ${note.title}`, JSON.stringify(generatedQuestions)]
-      )
+      await studyData.createQuiz(currentUser.id, noteId, note.class_id || null, `Quiz: ${note.title}`, JSON.stringify(generatedQuestions))
       setShowGenerateModal(false)
       loadQuizzes()
       alert(`Successfully generated quiz with ${generatedQuestions.length} questions!`)
@@ -115,8 +105,8 @@ const QuizList = () => {
   const deleteQuiz = async (id: number) => {
     if (!confirm('Delete this quiz? This will also delete all associated attempts.')) return
     try {
-      await window.electronAPI.db.run('DELETE FROM quiz_attempts WHERE quiz_id = ?', [id])
-      await window.electronAPI.db.run('DELETE FROM quizzes WHERE id = ?', [id])
+      await studyData.deleteQuizAttempts(id)
+      await studyData.deleteQuiz(id)
       setQuizzes(quizzes.filter(q => q.id !== id))
     } catch (error) {
       console.error('Failed to delete quiz:', error)

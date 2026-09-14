@@ -1,14 +1,19 @@
 import React from 'react'
-import { claimDatabaseTab } from './services/databaseOwnership'
-import { electronShim, initDatabase } from './services/electronShim'
 import './styles/index.css'
 
-// Install the browser shim before React renders
-;(window as any).electronAPI = electronShim
-
 async function boot() {
-  await claimDatabaseTab()
-  await initDatabase()
+  const { cloudClient } = await import('./services/cloud/client')
+  const { electronShim, initDatabase } = await import('./services/electronShim')
+  window.electronAPI = electronShim
+  if (!cloudClient) {
+    const { claimDatabaseTab } = await import('./services/databaseOwnership')
+    await claimDatabaseTab()
+    await initDatabase()
+  } else {
+    // Fail closed if a forgotten legacy SQL call reaches the cloud build.
+    const unavailable = async () => { throw new Error('Local SQL is unavailable in cloud mode.') }
+    window.electronAPI = { ...electronShim, db: { query: unavailable, get: unavailable, run: unavailable, batch: unavailable } }
+  }
 
   const { createRoot } = await import('react-dom/client')
   const { default: App } = await import('./App')

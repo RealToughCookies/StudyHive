@@ -1,0 +1,130 @@
+import { test, before, after } from 'node:test'
+import assert from 'node:assert/strict'
+import { readFile } from 'node:fs/promises'
+import { PGlite } from '@electric-sql/pglite'
+import { readCloudConfig } from '../src/services/cloud/client'
+
+const db = new PGlite()
+const alice = '11111111-1111-4111-8111-111111111111'
+const bob = '22222222-2222-4222-8222-222222222222'
+let aliceId: number, bobId: number
+async function asUser<T = any>(uid: string, sql: string, params: unknown[] = []): Promise<T[]> {
+  await db.exec('set role authenticated')
+  try {
+    await db.query("select set_config('request.jwt.claim.sub', $1, false)", [uid])
+    return (await db.query<T>(sql, params)).rows
+  } finally { await db.exec('reset role') }
+}
+
+before(async () => {
+  // Only Supabase-owned auth/storage infrastructure is substituted. All application tables,
+  // policies, grants, triggers and RPCs below come from the actual deployment migration.
+  await db.exec(`
+    create role anon; create role authenticated;
+    create schema auth; create schema storage;
+    create table auth.users(id uuid primary key, email text, raw_user_meta_data jsonb default '{}', email_confirmed_at timestamptz);
+    create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+    grant usage on schema auth, storage, public to anon, authenticated;
+    grant execute on function auth.uid() to anon, authenticated;
+    create table storage.buckets(id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
+    create table storage.objects(id bigint generated always as identity primary key, bucket_id text, name text);
+    alter table storage.objects enable row level security;
+    grant select, insert, update, delete on storage.objects to authenticated;
+    create function storage.foldername(text) returns text[] language sql immutable as $$ select string_to_array($1, '/') $$;
+  `)
+  await db.exec(await readFile('supabase/migrations/20260909000000_cloud_foundation.sql', 'utf8'))
+  await db.query(`insert into auth.users(id,email,raw_user_meta_data,email_confirmed_at) values
+    ($1,'alice@example.test','{"username":"Alice","subscription_tier":"premium"}',now()),
+    ($2,'bob@example.test','{"username":"Bob"}',now())`, [alice, bob])
+  aliceId = (await asUser(alice, 'select id from public.users'))[0].id
+  bobId = (await asUser(bob, 'select id from public.users'))[0].id
+})
+after(() => db.close())
+
+test('cloud configuration fails closed and refuses privileged keys', () => {
+  assert.throws(() => readCloudConfig({}), /Connect a Supabase/)
+  assert.equal(readCloudConfig({ VITE_DATA_MODE: 'local' }), null)
+  assert.throws(() => readCloudConfig({ VITE_SUPABASE_URL: 'https://example.supabase.co', VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_secret_bad' }), /publishable key/)
+  assert.throws(() => readCloudConfig({ VITE_SUPABASE_URL: 'http://example.com', VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test' }), /HTTPS/)
+})
+
+test('signup creates a free private profile and default settings, ignoring forged tier metadata', async () => {
+  const profiles = await asUser(alice, 'select * from public.users')
+  assert.equal(profiles.length, 1)
+  assert.equal(profiles[0].username, 'Alice')
+  assert.equal(profiles[0].subscription_tier, 'free')
+  assert.equal((await asUser(alice, 'select * from public.settings')).length, 1)
+  await assert.rejects(asUser(alice, 'delete from public.settings'), /permission denied/)
+  await assert.rejects(asUser(alice, "update public.users set subscription_tier = 'premium'"), /permission denied/)
+  await assert.rejects(asUser(alice, 'insert into public.users(auth_user_id,username,email) values ($1,\'X\',\'x\')', [bob]), /permission denied/)
+})
+
+test('notes are isolated for reads, direct ID edits, deletes and forged owners', async () => {
+  const [note] = await asUser(alice, "insert into public.notes(title,content) values ('Private','Alice only') returning *")
+  assert.equal((await asUser(bob, 'select * from public.notes where id = $1', [note.id])).length, 0)
+  assert.equal((await asUser(bob, "update public.notes set content='stolen' where id=$1 returning id", [note.id])).length, 0)
+  assert.equal((await asUser(bob, 'delete from public.notes where id=$1 returning id', [note.id])).length, 0)
+  await assert.rejects(asUser(bob, "insert into public.notes(user_id,title,content) values ($1,'Forged','x')", [aliceId]), /row-level security/)
+  await assert.rejects(asUser(alice, 'update public.notes set user_id=$1 where id=$2', [bobId, note.id]), /row-level security/)
+  assert.equal((await asUser(alice, 'select content from public.notes where id=$1', [note.id]))[0].content, 'Alice only')
+})
+
+test('foreign keys cannot link materials to another account; deleting own class retains notes', async () => {
+  const [cls] = await asUser(alice, "insert into public.classes(name) values ('Biology') returning id")
+  await assert.rejects(asUser(bob, "insert into public.notes(class_id,title,content) values ($1,'Bad reference','x')", [cls.id]), /foreign key/)
+  const [note] = await asUser(alice, "insert into public.notes(class_id,title,content) values ($1,'Lecture','x') returning id", [cls.id])
+  await asUser(alice, 'delete from public.classes where id=$1', [cls.id])
+  assert.equal((await asUser(alice, 'select class_id from public.notes where id=$1', [note.id]))[0].class_id, null)
+})
+
+test('deck creation is atomic and manual cards remain available to free users', async () => {
+  const before = await asUser(alice, 'select id from public.flashcard_decks')
+  await assert.rejects(asUser(alice, "select public.create_flashcard_deck('Incomplete', $1)", [JSON.stringify([{front:'valid',back:'valid'}, {front:'',back:'bad'}])]), /check constraint/)
+  assert.equal((await asUser(alice, 'select id from public.flashcard_decks')).length, before.length)
+  const [created] = await asUser(alice, "select public.create_flashcard_deck('Manual', $1) as id", [JSON.stringify([{front:'Q',back:'A'}])])
+  assert.equal((await asUser(alice, 'select * from public.flashcards where deck_id=$1', [created.id])).length, 1)
+  assert.equal((await asUser(bob, 'select * from public.flashcards where deck_id=$1', [created.id])).length, 0)
+  await assert.rejects(asUser(alice, 'update public.flashcard_decks set spaced_repetition_enabled=true where id=$1', [created.id]), /row-level security/)
+})
+
+test('free users cannot create quizzes and Pro expires on the server', async () => {
+  await assert.rejects(asUser(bob, "insert into public.quizzes(title,questions) values ('Quiz','[]')"), /row-level security/)
+  await db.query("update public.users set subscription_tier='premium',subscription_expires_at=now()+interval '1 day' where id=$1", [bobId])
+  assert.equal((await asUser(bob, 'select public.has_pro() as allowed'))[0].allowed, true)
+  await asUser(bob, "insert into public.quizzes(title,questions) values ('Quiz','[]')")
+  await db.query("update public.users set subscription_expires_at=now()-interval '1 second' where id=$1", [bobId])
+  assert.equal((await asUser(bob, 'select public.has_pro() as allowed'))[0].allowed, false)
+  await assert.rejects(asUser(bob, "insert into public.quizzes(title,questions) values ('Expired','[]')"), /row-level security/)
+  assert.equal((await asUser(bob, 'select * from public.quizzes')).length, 1)
+})
+
+test('concurrent note saves reject stale revisions without destroying either saved version', async () => {
+  const [note] = await asUser(alice, "insert into public.notes(title,content) values ('Original','v1') returning *")
+  const [saved] = await asUser(alice, "select * from public.save_note($1,1,'New','v2')", [note.id])
+  assert.equal(saved.revision, 2)
+  await assert.rejects(asUser(alice, "select * from public.save_note($1,1,'Stale','overwritten')", [note.id]), /changed on another device/)
+  await assert.rejects(asUser(bob, "select * from public.save_note($1,2,'Stolen','bad')", [note.id]), /changed on another device/)
+  assert.equal((await asUser(alice, 'select content from public.notes where id=$1', [note.id]))[0].content, 'v2')
+})
+
+test('private file policies reject cross-account downloads, uploads, deletes and public access', async () => {
+  const name = `${aliceId}/document.pdf`
+  await asUser(alice, "insert into storage.objects(bucket_id,name) values ('study-files',$1)", [name])
+  assert.equal((await asUser(alice, 'select * from storage.objects where name=$1', [name])).length, 1)
+  assert.equal((await asUser(bob, 'select * from storage.objects where name=$1', [name])).length, 0)
+  await assert.rejects(asUser(bob, "insert into storage.objects(bucket_id,name) values ('study-files',$1)", [name]), /row-level security/)
+  assert.equal((await asUser(bob, 'delete from storage.objects where name=$1 returning id', [name])).length, 0)
+  const bucket = (await db.query<any>("select * from storage.buckets where id='study-files'")).rows[0]
+  assert.equal(bucket.public, false)
+  assert.equal(bucket.file_size_limit, 10485760)
+  await db.exec('set role anon')
+  try { await assert.rejects(db.query('select * from public.notes'), /permission denied/) }
+  finally { await db.exec('reset role') }
+})
+
+test('unverified accounts cannot access study data even if a token is issued', async () => {
+  const uid = '33333333-3333-4333-8333-333333333333'
+  await db.query("insert into auth.users(id,email) values ($1,'unverified@example.test')", [uid])
+  assert.equal((await asUser(uid, 'select * from public.settings')).length, 0)
+  await assert.rejects(asUser(uid, "insert into public.notes(title,content) values ('Blocked','x')"), /null value|row-level security/)
+})

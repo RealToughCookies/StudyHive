@@ -1,4 +1,6 @@
-import { useEffect, useState, useMemo } from 'react'
+import { cloudClient } from '../services/cloud/client'
+import { savePendingEdits } from '../services/pendingEdits'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useStore } from '../store'
 import {
   Home,
@@ -31,6 +33,16 @@ import { useTimerEngine } from '../hooks/useSharedTimer'
 const Layout = () => {
   const { currentPage, currentUser, settings, setCurrentPage, logout, timer } = useStore()
   const [isFocusMode, setIsFocusMode] = useState(false)
+  const [signingOut, setSigningOut] = useState(false)
+
+  const leaveEditor = useCallback(async (action: () => void) => {
+    if (cloudClient && !await savePendingEdits()) {
+      alert('Your note could not be saved. Keep a copy of your edits or resolve the save error before leaving it.')
+      return
+    }
+    action()
+  }, [])
+  const navigate = useCallback((page: string) => { void leaveEditor(() => setCurrentPage(page)) }, [leaveEditor, setCurrentPage])
 
   // Keep the timer running globally, even when not on the timer page
   useTimerEngine()
@@ -71,7 +83,7 @@ const Layout = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return
       if (e.key === 'Escape' && isFocusMode) {
-        setIsFocusMode(false)
+        void leaveEditor(() => setIsFocusMode(false))
         return
       }
       // Ignore if typing in input/textarea/contentEditable
@@ -84,16 +96,16 @@ const Layout = () => {
 
       // Check against configured shortcuts
       const shortcutActions: Array<{ action: keyof ShortcutConfig; handler: () => void }> = [
-        { action: 'dashboard', handler: () => setCurrentPage('dashboard') },
-        { action: 'classes', handler: () => setCurrentPage('classes') },
-        { action: 'timer', handler: () => setCurrentPage('timer') },
-        { action: 'notes', handler: () => setCurrentPage('notes') },
-        { action: 'stickynotes', handler: () => setCurrentPage('stickynotes') },
-        { action: 'flashcards', handler: () => setCurrentPage('flashcards') },
-        { action: 'quiz', handler: () => setCurrentPage('quiz') },
-        { action: 'review', handler: () => setCurrentPage('review') },
-        { action: 'settings', handler: () => setCurrentPage('settings') },
-        { action: 'focusMode', handler: () => setIsFocusMode(true) },
+        { action: 'dashboard', handler: () => navigate('dashboard') },
+        { action: 'classes', handler: () => navigate('classes') },
+        { action: 'timer', handler: () => navigate('timer') },
+        { action: 'notes', handler: () => navigate('notes') },
+        { action: 'stickynotes', handler: () => navigate('stickynotes') },
+        { action: 'flashcards', handler: () => navigate('flashcards') },
+        { action: 'quiz', handler: () => navigate('quiz') },
+        { action: 'review', handler: () => navigate('review') },
+        { action: 'settings', handler: () => navigate('settings') },
+        { action: 'focusMode', handler: () => void leaveEditor(() => setIsFocusMode(true)) },
       ]
 
       for (const { action, handler } of shortcutActions) {
@@ -108,11 +120,11 @@ const Layout = () => {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [setCurrentPage, isFocusMode, shortcuts])
+  }, [navigate, leaveEditor, isFocusMode, shortcuts])
 
   // Render Focus Mode if active
   if (isFocusMode) {
-    return <FocusMode onExit={() => setIsFocusMode(false)} />
+    return <FocusMode onExit={() => void leaveEditor(() => setIsFocusMode(false))} />
   }
 
   const navItems = [
@@ -210,7 +222,7 @@ const Layout = () => {
             return (
               <button
                 key={item.id}
-                onClick={() => setCurrentPage(item.id)}
+                onClick={() => navigate(item.id)}
                 className={`
                   sidebar-nav-item w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl
                   transition-all duration-200 group
@@ -244,7 +256,7 @@ const Layout = () => {
         {/* Focus Mode & Logout */}
         <div className="p-4 border-t border-gray-200 space-y-2">
           <button
-            onClick={() => setIsFocusMode(true)}
+            onClick={() => void leaveEditor(() => setIsFocusMode(true))}
             className="w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 hover:from-amber-100 hover:to-orange-100 transition-all duration-200 border border-amber-200/50 group"
             title="Focus Mode (Press F)"
           >
@@ -255,11 +267,24 @@ const Layout = () => {
             <kbd className="ml-auto text-xs font-mono bg-amber-200/50 px-2 py-0.5 rounded text-amber-800">F</kbd>
           </button>
           <button
-            onClick={logout}
+            onClick={async () => {
+              if (!cloudClient) { logout(); return }
+              if (signingOut) return
+              setSigningOut(true)
+              try {
+                if (!await savePendingEdits()) {
+                  alert('Your note could not be saved. Keep a copy of your edits or resolve the save error before signing out.')
+                  return
+                }
+                const { error } = await cloudClient.auth.signOut({ scope: 'local' })
+                if (error) alert('Sign out failed. Check your connection and try again.')
+              } finally { setSigningOut(false) }
+            }}
+            disabled={signingOut}
             className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all duration-200 group"
           >
             <LogOut className="w-5 h-5 transition-transform duration-200 group-hover:-translate-x-0.5" />
-            <span className="font-medium">Sign Out</span>
+            <span className="font-medium">{signingOut ? 'Saving and signing out…' : 'Sign Out'}</span>
           </button>
         </div>
       </div>

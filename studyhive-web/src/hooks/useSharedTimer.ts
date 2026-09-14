@@ -1,3 +1,4 @@
+import { studyData } from '../services/studyData'
 import { useEffect } from 'react'
 import { useStore } from '../store'
 
@@ -55,11 +56,7 @@ export const useTimerEngine = () => {
       } catch (error) { console.error('Unable to show timer notification:', error) }
     }
     if (currentTimer.mode === 'work' && currentUser) {
-      window.electronAPI.db.run(
-        `INSERT INTO pomodoro_sessions (user_id, duration_minutes, completed, completed_at)
-         VALUES (?, ?, 1, datetime('now'))`,
-        [currentUser.id, currentSettings?.pomodoro_work_minutes || 25]
-      ).catch(error => console.error('Failed to save session:', error))
+      studyData.saveFocusSession(currentUser.id, currentSettings?.pomodoro_work_minutes || 25).catch(error => console.error('Failed to save session:', error))
     }
   }
 

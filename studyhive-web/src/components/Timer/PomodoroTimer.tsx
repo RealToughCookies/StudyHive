@@ -1,3 +1,4 @@
+import { studyData } from '../../services/studyData'
 import { localDateKey } from '../../services/dates'
 import { useState, useEffect } from 'react'
 import { useStore } from '../../store'
@@ -40,14 +41,8 @@ const PomodoroTimer = () => {
     if (!currentUser) return
     setSaving(true)
     try {
-      await window.electronAPI.db.run(
-        `UPDATE settings SET pomodoro_work_minutes = ?, pomodoro_break_minutes = ?, pomodoro_long_break_minutes = ? WHERE user_id = ?`,
-        [workMins, shortBreakMins, longBreakMins, currentUser.id]
-      )
-      const updatedSettings = await window.electronAPI.db.get(
-        'SELECT * FROM settings WHERE user_id = ?',
-        [currentUser.id]
-      )
+      await studyData.saveTimerSettings(workMins, shortBreakMins, longBreakMins, currentUser.id)
+      const updatedSettings = await studyData.getSettings(currentUser.id)
       if (useStore.getState().currentUser?.id !== currentUser.id) return
       setSettings({ ...updatedSettings,
         openai_api_key: useStore.getState().settings?.openai_api_key,
@@ -73,12 +68,7 @@ const PomodoroTimer = () => {
 
     try {
       const today = localDateKey()
-      const sessions = await window.electronAPI.db.query(
-        `SELECT COUNT(*) as count, SUM(duration_minutes) as total_minutes
-         FROM pomodoro_sessions
-         WHERE user_id = ? AND completed = 1 AND DATE(completed_at, 'localtime') = ?`,
-        [currentUser.id, today]
-      )
+      const sessions = await studyData.dailyTimerStats(currentUser.id, today)
 
       if (sessions && sessions.length > 0) {
         setTodayStats({

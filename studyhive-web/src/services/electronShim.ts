@@ -1,5 +1,7 @@
 import { initDatabase, readDatabase, runDatabaseBatch } from './database'
 import { saveFile, deleteFile, getFile, getFileAsDataUrl } from './fileStorage'
+import { cloudClient } from './cloud/client'
+import { useStore } from '../store'
 
 // Temporary storage for File objects between select and read/save operations
 const pendingFiles = new Map<string, File>()
@@ -13,7 +15,8 @@ function generateStorageFilename(originalName: string): string {
   const ext = originalName.split('.').pop() || ''
   const hex = Array.from(crypto.getRandomValues(new Uint8Array(4)))
     .map(b => b.toString(16).padStart(2, '0')).join('')
-  return `${Date.now()}-${hex}.${ext}`
+  const prefix = cloudClient ? `${useStore.getState().currentUser?.id}/` : ''
+  return `${prefix}${Date.now()}-${hex}.${ext}`
 }
 
 function pickFiles(accept: string, multiple = false): Promise<File[]> {
@@ -65,7 +68,7 @@ const electronShim = {
 
   file: {
     selectFiles: async () => {
-      const files = await pickFiles('.pdf,.doc,.docx,.txt,.rtf,.odt,.png,.jpg,.jpeg,.gif,.webp,.svg,.xls,.xlsx,.csv,.ppt,.pptx', true)
+      const files = await pickFiles(cloudClient ? '.pdf,.docx,.txt,.png,.jpg,.jpeg,.gif,.webp' : '.pdf,.doc,.docx,.txt,.rtf,.odt,.png,.jpg,.jpeg,.gif,.webp,.svg,.xls,.xlsx,.csv,.ppt,.pptx', true)
       return files.map(file => {
         const id = generateUniqueId()
         pendingFiles.set(id, file)

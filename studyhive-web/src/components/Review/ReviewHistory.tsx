@@ -1,3 +1,4 @@
+import { studyData } from '../../services/studyData'
 import { parseStoredDate } from '../../services/dates'
 import { useState, useEffect } from 'react'
 import { useStore } from '../../store'
@@ -23,10 +24,7 @@ const ReviewHistory = () => {
     try {
       const cutoffDate = new Date()
       cutoffDate.setDate(cutoffDate.getDate() - filterDays)
-      const attempts = await window.electronAPI.db.query(
-        'SELECT qa.*, q.title as quiz_title, q.questions FROM quiz_attempts qa JOIN quizzes q ON qa.quiz_id = q.id WHERE qa.user_id = ? AND datetime(qa.completed_at) >= datetime(?) ORDER BY qa.completed_at DESC',
-        [currentUser.id, cutoffDate.toISOString()]
-      )
+      const attempts = await studyData.quizHistory(currentUser.id, cutoffDate.toISOString())
       const attemptsWithParsedData = (attempts || []).map((attempt: any) => ({
         ...attempt,
         answers: typeof attempt.answers === 'string' ? JSON.parse(attempt.answers) : attempt.answers,
@@ -49,10 +47,7 @@ const ReviewHistory = () => {
     try {
       const cutoffDate = new Date()
       cutoffDate.setDate(cutoffDate.getDate() - filterDays)
-      const sessions = await window.electronAPI.db.query(
-        'SELECT * FROM pomodoro_sessions WHERE user_id = ? AND completed = 1 AND datetime(completed_at) >= datetime(?) ORDER BY completed_at DESC',
-        [currentUser.id, cutoffDate.toISOString()]
-      )
+      const sessions = await studyData.sessionHistory(currentUser.id, cutoffDate.toISOString())
       setPomodoroSessions(sessions || [])
     } catch (error) {
       console.error('Failed to load pomodoro sessions:', error)

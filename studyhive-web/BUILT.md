@@ -1,6 +1,8 @@
 # StudyHive implementation status
 
-This document describes the current browser source, not the historical Electron release artifacts.
+The cloud foundation now supports Supabase accounts, recovery, private data/files and note revision checks. Setup is described in [docs/CLOUD_SETUP.md](docs/CLOUD_SETUP.md); remaining product stages are tracked in [docs/PRODUCT.md](docs/PRODUCT.md). Live provider/email/browser checks are pending.
+
+The remainder of this document describes the earlier local-demo implementation, which is still available with `VITE_DATA_MODE=local`, not cloud-mode behavior or historical Electron artifacts.
 
 ## Runtime
 

@@ -1,7 +1,9 @@
+import { cloudClient } from './cloud/client'
 import OpenAI from 'openai'
 
 // Each request owns its client so credentials cannot carry over between accounts.
 function createClient(apiKey: string) {
+  if (cloudClient) throw new Error('Included Pro AI is coming in the next implementation stage.')
   if (!apiKey.trim()) throw new Error('Please add your OpenAI API key in Settings.')
   return new OpenAI({ apiKey: apiKey.trim(), dangerouslyAllowBrowser: true, fetch: globalThis.fetch })
 }

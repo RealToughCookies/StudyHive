@@ -1,3 +1,5 @@
+import { saveNoteContent } from '../services/saveNote'
+import { registerPendingEditor } from '../services/pendingEdits'
 import { useCallback, useEffect, useRef, useState, MutableRefObject } from 'react'
 import { Note } from '../types'
 
@@ -13,6 +15,9 @@ export function useNoteAutosave(
   latest.current = { note, title, classId, onUpdate }
   const revision = useRef(0)
   const inFlight = useRef(0)
+  const saveQueue = useRef<Promise<unknown>>(Promise.resolve())
+  const serverVersions = useRef(new Map<number, number | undefined>())
+  if (note && !serverVersions.current.has(note.id)) serverVersions.current.set(note.id, note.revision)
   const pending = useRef<{ revision: number; id: number; title: string; classId?: number; content: string } | null>(null)
   const timeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const mounted = useRef(false)
@@ -26,11 +31,14 @@ export function useNoteAutosave(
     inFlight.current++
     if (mounted.current) { setIsSaving(true); setSaveError(null) }
     try {
-      await window.electronAPI.db.run(
-        `UPDATE notes SET title = ?, content = ?, class_id = ?, updated_at = datetime('now') WHERE id = ?`,
-        [snapshot.title, snapshot.content, snapshot.classId || null, snapshot.id],
-      )
-      const updated = await window.electronAPI.db.get('SELECT * FROM notes WHERE id = ?', [snapshot.id])
+      const operation = saveQueue.current.then(async () => {
+        const updated = await saveNoteContent(snapshot.id, snapshot.title, snapshot.content, snapshot.classId,
+          serverVersions.current.get(snapshot.id))
+        serverVersions.current.set(snapshot.id, updated?.revision)
+        return updated
+      })
+      saveQueue.current = operation.catch(() => {})
+      const updated = await operation
       if (mounted.current && latest.current.note?.id === snapshot.id && revision.current === snapshot.revision) {
         latest.current.onUpdate(updated)
         setLastSaved(new Date())
@@ -39,7 +47,7 @@ export function useNoteAutosave(
     } catch (error) {
       console.error('Failed to save note:', error)
       if (revision.current === snapshot.revision) pending.current ??= snapshot
-      if (mounted.current && revision.current === snapshot.revision) setSaveError('Could not save this note. Please try saving again.')
+      if (mounted.current && revision.current === snapshot.revision) setSaveError(error instanceof Error ? error.message : 'Could not save this note. Please try saving again.')
       return false
     } finally {
       inFlight.current--
@@ -63,6 +71,11 @@ export function useNoteAutosave(
 
   useEffect(() => {
     mounted.current = true
+    const unregisterEditor = registerPendingEditor(async () => {
+      const saved = await flush()
+      await saveQueue.current
+      return saved && !pending.current
+    })
     const beforeUnload = (event: BeforeUnloadEvent) => {
       if (pending.current || inFlight.current > 0) {
         event.preventDefault()
@@ -75,6 +88,7 @@ export function useNoteAutosave(
     window.addEventListener('pagehide', saveOnPageHide)
     document.addEventListener('visibilitychange', saveOnHide)
     return () => {
+      unregisterEditor()
       mounted.current = false
       window.removeEventListener('beforeunload', beforeUnload)
       window.removeEventListener('pagehide', saveOnPageHide)

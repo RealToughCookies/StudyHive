@@ -1,3 +1,5 @@
+import { cloudClient } from '../../services/cloud/client'
+import { studyData } from '../../services/studyData'
 import { saveFlashcardDeck, assertActiveAccount } from '../../services/studyMaterials'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { ArrowLeft, Save, Sparkles, FileQuestion, GraduationCap, BookOpen, Tag, Bold, Italic, List, ListOrdered, Highlighter, Underline, Image, Table, X, Trash2, MousePointerClick, Minus, Plus, Type, Layers, Check } from 'lucide-react'
@@ -870,6 +872,10 @@ const NoteEditor = ({ note, classes = [], onBack, onUpdate }: NoteEditorProps) =
       alert('Please add some content to your note first.')
       return
     }
+    if (cloudClient) {
+      alert('Pro AI study tools are coming soon. Your manual study tools are available now.')
+      return
+    }
     if (!settings?.openai_api_key) {
       alert('Please add your OpenAI API key in Settings to use AI features.')
       return
@@ -895,6 +901,10 @@ const NoteEditor = ({ note, classes = [], onBack, onUpdate }: NoteEditorProps) =
       alert('Please add some content to your note first.')
       return
     }
+    if (cloudClient) {
+      alert('Pro AI study tools are coming soon. Your manual study tools are available now.')
+      return
+    }
     if (!settings?.openai_api_key) {
       alert('Please add your OpenAI API key in Settings to use AI features.')
       return
@@ -904,11 +914,7 @@ const NoteEditor = ({ note, classes = [], onBack, onUpdate }: NoteEditorProps) =
     try {
       const questions = await generateQuiz(plainText, settings.openai_api_key)
       assertActiveAccount(currentUser!.id)
-      await window.electronAPI.db.run(
-        `INSERT INTO quizzes (user_id, note_id, class_id, title, questions, created_at)
-         VALUES (?, ?, ?, ?, ?, datetime('now'))`,
-        [currentUser?.id, note?.id, classId || null, `Quiz: ${title}`, JSON.stringify(questions)]
-      )
+      await studyData.createQuiz(currentUser?.id, note?.id, classId || null, `Quiz: ${title}`, JSON.stringify(questions))
       alert(`Successfully generated quiz with ${questions.length} questions! View it in the Quizzes section.`)
     } catch (error: any) {
       console.error('Failed to generate quiz:', error)
@@ -925,6 +931,10 @@ const NoteEditor = ({ note, classes = [], onBack, onUpdate }: NoteEditorProps) =
       alert('Please add some content to your note first.')
       return
     }
+    if (cloudClient) {
+      alert('Pro AI study tools are coming soon. Your manual study tools are available now.')
+      return
+    }
     if (!settings?.openai_api_key) {
       alert('Please add your OpenAI API key in Settings to use AI features.')
       return
@@ -935,11 +945,7 @@ const NoteEditor = ({ note, classes = [], onBack, onUpdate }: NoteEditorProps) =
       const studyGuide = await generateStudyGuide(plainText, settings.openai_api_key)
       const { markdownToNoteHtml } = await import('../../services/markdown')
       assertActiveAccount(currentUser!.id)
-      await window.electronAPI.db.run(
-        `INSERT INTO notes (user_id, class_id, title, content, created_at, updated_at)
-         VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))`,
-        [currentUser?.id, classId || null, `Study Guide: ${title}`, markdownToNoteHtml(studyGuide)]
-      )
+      await studyData.createNote(currentUser?.id, classId || null, `Study Guide: ${title}`, markdownToNoteHtml(studyGuide))
       alert('Successfully generated study guide! It has been saved as a new note.')
     } catch (error: any) {
       console.error('Failed to generate study guide:', error)

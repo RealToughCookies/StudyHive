@@ -1,3 +1,6 @@
+import { cloudClient } from '../../services/cloud/client'
+import { cloud } from '../../services/cloud/data'
+import { studyData } from '../../services/studyData'
 import { useState, useEffect, useRef } from 'react'
 import { useStore } from '../../store'
 import { X, Minus } from 'lucide-react'
@@ -19,10 +22,7 @@ const FloatingStickyNotes = () => {
   const loadStickyNotes = async () => {
     if (!currentUser) return
     try {
-      const results = await window.electronAPI.db.query(
-        'SELECT * FROM sticky_notes WHERE user_id = ? AND is_visible = 1',
-        [currentUser.id]
-      )
+      const results = await studyData.visibleStickyNotes(currentUser.id)
       setStickyNotes(results || [])
     } catch (error) {
       console.error('Failed to load sticky notes:', error)
@@ -36,7 +36,8 @@ const FloatingStickyNotes = () => {
         .join(', ')
       const values = [...Object.values(updates), id]
 
-      await window.electronAPI.db.run(
+      if (cloudClient) await cloud.update('sticky_notes', { ...updates, updated_at: new Date().toISOString() }, { id })
+      else await window.electronAPI.db.run(
         `UPDATE sticky_notes SET ${setClauses}, updated_at = datetime('now') WHERE id = ?`,
         values
       )

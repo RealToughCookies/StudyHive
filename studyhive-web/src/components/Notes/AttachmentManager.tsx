@@ -1,3 +1,4 @@
+import { studyData } from '../../services/studyData'
 import { useState, useEffect } from 'react'
 import { useStore } from '../../store'
 import { NoteAttachment } from '../../types'
@@ -20,10 +21,7 @@ const AttachmentManager = ({ noteId }: AttachmentManagerProps) => {
   const loadAttachments = async () => {
     if (!currentUser || !noteId) return
     try {
-      const results = await window.electronAPI.db.query(
-        'SELECT * FROM note_attachments WHERE note_id = ? AND user_id = ? ORDER BY created_at DESC',
-        [noteId, currentUser.id]
-      )
+      const results = await studyData.listAttachments(noteId, currentUser.id)
       setAttachments(results || [])
     } catch (error) {
       console.error('Failed to load attachments:', error)
@@ -42,11 +40,7 @@ const AttachmentManager = ({ noteId }: AttachmentManagerProps) => {
         const { filename, stats } = await window.electronAPI.file.saveAttachment(file.path, file.name)
 
         try {
-          await window.electronAPI.db.run(
-          `INSERT INTO note_attachments (note_id, user_id, filename, original_name, file_type, file_size, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`,
-          [noteId, currentUser.id, filename, file.name, stats?.type || '', stats?.size || 0]
-          )
+          await studyData.createAttachment(noteId, currentUser.id, filename, file.name, stats?.type || '', stats?.size || 0)
         } catch (error) {
           await window.electronAPI.file.deleteAttachment(filename).catch(() => {})
           throw error
@@ -76,10 +70,7 @@ const AttachmentManager = ({ noteId }: AttachmentManagerProps) => {
     if (!confirm(`Delete "${attachment.original_name}"?`)) return
 
     try {
-      await window.electronAPI.db.run(
-        'DELETE FROM note_attachments WHERE id = ?',
-        [attachment.id]
-      )
+      await studyData.deleteAttachment(attachment.id)
       setAttachments(items => items.filter(a => a.id !== attachment.id))
       await window.electronAPI.file.deleteAttachment(attachment.filename)
     } catch (error) {

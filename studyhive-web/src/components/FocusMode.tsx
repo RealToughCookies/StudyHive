@@ -1,3 +1,4 @@
+import { studyData } from '../services/studyData'
 import { useState, useEffect } from 'react'
 import { useStore } from '../store'
 import { X, Play, Pause, RotateCcw, Volume2, VolumeX, FileText, ChevronDown, Plus } from 'lucide-react'
@@ -29,10 +30,7 @@ const FocusMode = ({ onExit }: FocusModeProps) => {
   const loadNotes = async () => {
     if (!currentUser) return
     try {
-      const results = await window.electronAPI.db.query(
-        'SELECT * FROM notes WHERE user_id = ? ORDER BY updated_at DESC',
-        [currentUser.id]
-      )
+      const results = await studyData.listNotes(currentUser.id)
       setNotes(results || [])
     } catch (error) {
       console.error('Failed to load notes:', error)
@@ -43,17 +41,10 @@ const FocusMode = ({ onExit }: FocusModeProps) => {
     if (!currentUser || !newNoteTitle.trim()) return
 
     try {
-      const result = await window.electronAPI.db.run(
-        `INSERT INTO notes (user_id, class_id, title, content, created_at, updated_at)
-         VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))`,
-        [currentUser.id, null, newNoteTitle.trim(), '']
-      )
+      const result = await studyData.createNote(currentUser.id, null, newNoteTitle.trim(), '')
 
       const noteId = Number(result.lastInsertRowid)
-      const newNote = await window.electronAPI.db.get(
-        'SELECT * FROM notes WHERE id = ?',
-        [noteId]
-      )
+      const newNote = await studyData.getNote(noteId)
 
       if (newNote) {
         setNotes([newNote, ...notes])

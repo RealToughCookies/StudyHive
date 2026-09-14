@@ -1,3 +1,12 @@
+import { cloudClient } from './cloud/client'
+import { useStore } from '../store'
+
+function fileOwner(filename: string) {
+  const id = useStore.getState().currentUser?.id
+  if (!id || !filename.startsWith(`${id}/`)) throw new Error('This file is not in your workspace.')
+  return id
+}
+
 const IDB_NAME = 'studyhive-files'
 const STORE_NAME = 'files'
 
@@ -14,6 +23,14 @@ function openFileDB(): Promise<IDBDatabase> {
 
 export async function saveFile(filename: string, data: Blob | Uint8Array): Promise<void> {
   const blob = data instanceof Blob ? data : new Blob([data as BlobPart])
+  if (cloudClient) {
+    const owner = fileOwner(filename)
+    if (blob.size > 10 * 1024 * 1024) throw new Error('Files must be 10 MB or smaller.')
+    const { error } = await cloudClient.storage.from('study-files').upload(filename, blob, { upsert: false })
+    if (error) throw error
+    if (useStore.getState().currentUser?.id !== owner) throw new Error('Your account changed during upload.')
+    return
+  }
   const idb = await openFileDB()
   const tx = idb.transaction(STORE_NAME, 'readwrite')
   tx.objectStore(STORE_NAME).put(blob, filename)
@@ -25,6 +42,13 @@ export async function saveFile(filename: string, data: Blob | Uint8Array): Promi
 }
 
 export async function getFile(filename: string): Promise<Blob | null> {
+  if (cloudClient) {
+    const owner = fileOwner(filename)
+    const { data, error } = await cloudClient.storage.from('study-files').download(filename)
+    if (error) throw error
+    if (useStore.getState().currentUser?.id !== owner) throw new Error('Your account changed during download.')
+    return data
+  }
   const idb = await openFileDB()
   const tx = idb.transaction(STORE_NAME, 'readonly')
   const req = tx.objectStore(STORE_NAME).get(filename)
@@ -35,6 +59,12 @@ export async function getFile(filename: string): Promise<Blob | null> {
 }
 
 export async function deleteFile(filename: string): Promise<boolean> {
+  if (cloudClient) {
+    fileOwner(filename)
+    const { error } = await cloudClient.storage.from('study-files').remove([filename])
+    if (error) throw error
+    return true
+  }
   const idb = await openFileDB()
   const tx = idb.transaction(STORE_NAME, 'readwrite')
   tx.objectStore(STORE_NAME).delete(filename)

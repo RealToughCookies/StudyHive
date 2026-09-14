@@ -1,3 +1,4 @@
+import { studyData } from '../../services/studyData'
 import { useState, useEffect } from 'react'
 import { useStore } from '../../store'
 import { Plus, StickyNote as StickyNoteIcon, Eye, EyeOff, Trash2 } from 'lucide-react'
@@ -24,10 +25,7 @@ const StickyNotesManager = () => {
   const loadStickyNotes = async () => {
     if (!currentUser) return
     try {
-      const results = await window.electronAPI.db.query(
-        'SELECT * FROM sticky_notes WHERE user_id = ? ORDER BY created_at DESC',
-        [currentUser.id]
-      )
+      const results = await studyData.listStickyNotes(currentUser.id)
       setStickyNotes(results || [])
     } catch (error) {
       console.error('Failed to load sticky notes:', error)
@@ -42,11 +40,7 @@ const StickyNotesManager = () => {
       const offsetX = Math.floor(Math.random() * 200) + 100
       const offsetY = Math.floor(Math.random() * 200) + 100
 
-      await window.electronAPI.db.run(
-        `INSERT INTO sticky_notes (user_id, content, position_x, position_y, color, is_visible)
-         VALUES (?, ?, ?, ?, ?, 1)`,
-        [currentUser.id, '', offsetX, offsetY, newNoteColor]
-      )
+      await studyData.createStickyNote(currentUser.id, '', offsetX, offsetY, newNoteColor)
       loadStickyNotes()
       // Dispatch event to notify floating notes to refresh
       window.dispatchEvent(new CustomEvent('sticky-notes-updated'))
@@ -57,10 +51,7 @@ const StickyNotesManager = () => {
 
   const toggleVisibility = async (note: StickyNote) => {
     try {
-      await window.electronAPI.db.run(
-        'UPDATE sticky_notes SET is_visible = ? WHERE id = ?',
-        [note.is_visible ? 0 : 1, note.id]
-      )
+      await studyData.toggleStickyNote(note.is_visible ? 0 : 1, note.id)
       loadStickyNotes()
       window.dispatchEvent(new CustomEvent('sticky-notes-updated'))
     } catch (error) {
@@ -72,7 +63,7 @@ const StickyNotesManager = () => {
     if (!confirm('Delete this sticky note?')) return
 
     try {
-      await window.electronAPI.db.run('DELETE FROM sticky_notes WHERE id = ?', [id])
+      await studyData.deleteStickyNote(id)
       loadStickyNotes()
       window.dispatchEvent(new CustomEvent('sticky-notes-updated'))
     } catch (error) {
@@ -82,10 +73,7 @@ const StickyNotesManager = () => {
 
   const showAllNotes = async () => {
     try {
-      await window.electronAPI.db.run(
-        'UPDATE sticky_notes SET is_visible = 1 WHERE user_id = ?',
-        [currentUser?.id]
-      )
+      await studyData.showStickyNotes(currentUser?.id)
       loadStickyNotes()
       window.dispatchEvent(new CustomEvent('sticky-notes-updated'))
     } catch (error) {
@@ -95,10 +83,7 @@ const StickyNotesManager = () => {
 
   const hideAllNotes = async () => {
     try {
-      await window.electronAPI.db.run(
-        'UPDATE sticky_notes SET is_visible = 0 WHERE user_id = ?',
-        [currentUser?.id]
-      )
+      await studyData.hideStickyNotes(currentUser?.id)
       loadStickyNotes()
       window.dispatchEvent(new CustomEvent('sticky-notes-updated'))
     } catch (error) {

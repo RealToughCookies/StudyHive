@@ -1,3 +1,4 @@
+import { cloudClient } from './cloud/client'
 import { useStore } from '../store'
 
 export function assertActiveAccount(userId: number) {
@@ -11,6 +12,15 @@ export async function saveFlashcardDeck(
   classId?: number | null, noteId?: number | null,
 ) {
   assertActiveAccount(userId)
+  if (cloudClient) {
+    const { data, error } = await cloudClient.rpc('create_flashcard_deck', {
+      deck_name: name, cards, class_ref: classId ?? null, note_ref: noteId ?? null,
+    })
+    assertActiveAccount(userId)
+    if (error) throw error
+    window.dispatchEvent(new CustomEvent('studyhive-data-updated'))
+    return data as number
+  }
   const results = await window.electronAPI.db.batch([
     {
       sql: 'INSERT INTO flashcard_decks (user_id, name, class_id, note_id) VALUES (?, ?, ?, ?)',

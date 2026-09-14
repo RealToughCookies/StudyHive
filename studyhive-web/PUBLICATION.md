@@ -2,6 +2,10 @@
 
 Publish the current browser source only. Do not upload `release/`, old installers, unpacked desktop applications, `node_modules/`, local databases, environment files, or credentials.
 
+## Cloud change — September 9, 2026
+
+The cloud foundation was added after the security scan below. That scan does not establish security of the new authentication/database integration. The new migration is tested with separate PostgreSQL roles for account and file isolation, entitlements, transactions and stale note edits. Hosted provider, email and browser checks remain required before launch; see [docs/CLOUD_SETUP.md](docs/CLOUD_SETUP.md).
+
 ## Security review — September 8, 2026
 
 The Codex Security source review inspected all 40 authored files under `src/`, tests, build configuration, local storage and account behavior, AI content handling, and the inspectable entry points of the historical desktop builds.
@@ -28,7 +32,7 @@ The supplied source bundle contains an explicit selection of `src/`, `public/`, 
 
 This workspace was not a Git repository at review time, so no commit history, staged tree, or remote repository was verified. Before pushing, inspect the actual staged files with `git diff --cached --name-only` and `git diff --cached`. Do not force-add ignored artifacts. Files already committed remain tracked despite ignore rules.
 
-## Application limits
+## Original local-demo application limits
 
 Accounts separate local study data in the UI; they do not protect against someone with access to the browser profile or scripts running on the same origin. Remembered API keys are explicitly stored unencrypted; new keys remain session-only by default. AI generation sends the selected note to OpenAI using the user's own key. Do not embed a shared API key in the frontend.
 
