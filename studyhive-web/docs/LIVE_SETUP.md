@@ -40,3 +40,20 @@ The verified cloud foundation was pushed to GitHub as `5adbe6c` on September 14.
 - Stripe and OpenAI account sign-in, test price/portal/webhook setup, private server-key entry, explicit model selection, test allowance and end-to-end provider checks remain pending. Real payments remain disabled by the deployed code.
 
 Both SQL migrations were applied manually; neither should be replayed through a CLI push without first reconciling migration history.
+
+## Stripe sandbox configuration — September 15
+
+- Confirmed the owner signed in to Stripe's StudyHive sandbox and OpenAI. OpenAI lists an active `StudyHiveTest` key; its full value was not retrieved.
+- Created active sandbox product `prod_VGSswWpHRZ5cxC` (StudyHive Pro (Test)) with recurring price `price_1UFvwG5a48H6cFVpNUivJeGF`: USD 10/year. This is provisional test pricing, not a launch commitment. Saved the Price ID in Supabase as `STRIPE_PRICE_ID`.
+- Saved the default sandbox customer portal configuration `bpc_1UFvyS5a48H6cFVply435v69`. Cancellation is enabled at the end of the billing period; collecting a cancellation reason is disabled.
+- Created active webhook `we_1UFw2M5a48H6cFVp9v7vd4AP` to `https://nqrkcxigvlwfxpzolrhv.supabase.co/functions/v1/stripe-webhook`, scoped to the sandbox account and exactly six events: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`.
+- The webhook uses snapshot payloads with stable dashboard API version `2026-08-26.dahlia`; the dashboard offered only that version and a preview. The handler reads event type/customer and independently retrieves current subscriptions using its pinned `2025-06-30.basil` API version. End-to-end compatibility still needs validation.
+- Saved `OPENAI_MODEL=gpt-4.1-mini-2025-04-14` as the initial evaluation model. [Official model documentation](https://developers.openai.com/api/docs/models/gpt-4.1-mini) confirms Responses, image inputs and structured outputs support. No generation or cost/quality evaluation has run.
+- Pending: private entry of `OPENAI_API_KEY`, `STRIPE_SECRET_KEY` (sandbox `sk_test_` key), and `STRIPE_WEBHOOK_SECRET` (this destination's `whsec_` signing secret) in Supabase Edge Function Secrets. Their values have not been copied into code, chat, or the repository. The webhook is created but cannot process events until its secrets are configured.
+- AI allowance remains zero; no paid provider call or real payment was made. Provider spending controls, a test allowance, and end-to-end checkout/portal/AI tests remain necessary.
+
+### Private credential-entry handoff
+
+Open [Supabase Edge Function Secrets](https://supabase.com/dashboard/project/nqrkcxigvlwfxpzolrhv/functions/secrets). Add and save the three pending keys there, using **Add another** for additional rows. Do not paste their values into chat.
+
+The Stripe sandbox key is under [API keys](https://dashboard.stripe.com/acct_1UFvrq5a48H6cFVp/test/apikeys). The signing secret is in [StudyHive Pro test webhook](https://dashboard.stripe.com/acct_1UFvrq5a48H6cFVp/test/workbench/webhooks/we_1UFw2M5a48H6cFVp9v7vd4AP). Use the full saved OpenAI StudyHive key; if it is no longer available, create a replacement privately in [OpenAI API keys](https://platform.openai.com/api-keys).
