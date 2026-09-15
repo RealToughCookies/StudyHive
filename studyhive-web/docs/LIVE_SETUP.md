@@ -57,3 +57,9 @@ Both SQL migrations were applied manually; neither should be replayed through a 
 Open [Supabase Edge Function Secrets](https://supabase.com/dashboard/project/nqrkcxigvlwfxpzolrhv/functions/secrets). Add and save the three pending keys there, using **Add another** for additional rows. Do not paste their values into chat.
 
 The Stripe sandbox key is under [API keys](https://dashboard.stripe.com/acct_1UFvrq5a48H6cFVp/test/apikeys). The signing secret is in [StudyHive Pro test webhook](https://dashboard.stripe.com/acct_1UFvrq5a48H6cFVp/test/workbench/webhooks/we_1UFw2M5a48H6cFVp9v7vd4AP). Use the full saved OpenAI StudyHive key; if it is no longer available, create a replacement privately in [OpenAI API keys](https://platform.openai.com/api-keys).
+
+## Server secrets saved — September 15
+
+The owner entered `OPENAI_API_KEY`, `STRIPE_SECRET_KEY`, and `STRIPE_WEBHOOK_SECRET` privately in Supabase. The dashboard confirms all six required configuration names are present; secret values were not revealed or copied. Live endpoint checks now return 400 for missing Stripe signatures, 400 for a forged signature, and 401 for missing StudyHive login tokens. This verifies the webhook reads a signing secret and rejects those invalid requests; it does not establish that the stored secret matches Stripe or that either provider API key is valid.
+
+The in-app test browser is signed out of StudyHive. Authenticated test checkout, a real signed sandbox webhook delivery, portal access, and AI generation remain pending. Stripe's Send test events control offered CLI instructions rather than a dashboard event sender; no fixture was submitted. AI allowance remains zero and no paid provider request has run.
