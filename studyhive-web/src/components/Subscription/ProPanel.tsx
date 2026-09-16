@@ -5,17 +5,28 @@ import { useStore } from "../../store";
 import { assertActiveAccount } from "../../services/studyMaterials";
 import { User } from "../../types";
 
-async function loadMembership(userId: number) {
-  if (!cloudClient) throw new Error("Cloud sign-in is required.");
+type Membership = {
+  enabled: boolean | null;
+  user: User;
+  allowance: { limit: number; used: number } | null;
+  billingError?: string;
+};
+
+export async function loadMembership(userId: number, client = cloudClient): Promise<Membership> {
+  if (!client) throw new Error("Cloud sign-in is required.");
   const [info, profile, usage] = await Promise.all([
-    proRequest({ action: "billing-info" }),
-    cloudClient.from("users").select("*").eq("id", userId).single(),
-    cloudClient.rpc("ai_allowance"),
+    proRequest({ action: "billing-info" }, client).then(
+      info => ({ enabled: Boolean(info.enabled), billingError: "" }),
+      error => ({ enabled: null, billingError: error instanceof Error ? error.message : "Billing is unavailable." }),
+    ),
+    client.from("users").select("*").eq("id", userId).single(),
+    client.rpc("ai_allowance"),
   ]);
   assertActiveAccount(userId);
   if (profile.error) throw profile.error;
   return {
-    enabled: Boolean(info.enabled),
+    enabled: info.enabled,
+    billingError: info.billingError,
     user: profile.data as User,
     allowance: usage.error ? null : usage.data as { limit: number; used: number },
   };
@@ -53,6 +64,7 @@ export default function ProPanel({ onClose, billingReturn, load = loadMembership
         setEnabled(result.enabled);
         useStore.getState().setUser(result.user);
         setAllowance(result.allowance);
+        setError(result.billingError || "");
         // A redirect is only a cue to read the server-owned entitlement.
         // Give Stripe's webhook time to arrive, then offer a manual retry.
         if (billingReturn === "success" && !isPro() && ++attempts < 6) {

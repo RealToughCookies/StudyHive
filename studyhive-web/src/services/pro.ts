@@ -9,19 +9,31 @@ export function isPro() {
     Date.parse(user.subscription_expires_at || "") > Date.now()
   );
 }
-export async function proRequest(body: Record<string, unknown>) {
-  if (!cloudClient) throw new Error("Cloud sign-in is required.");
+export async function proRequest(body: Record<string, unknown>, client = cloudClient) {
+  if (!client) throw new Error("Cloud sign-in is required.");
   const id = useStore.getState().currentUser?.id;
   if (!id) throw new Error("Sign in first.");
-  const { data, error } = await cloudClient.functions.invoke("pro-service", {
+  const { data, error } = await client.functions.invoke("pro-service", {
     body,
   });
   assertActiveAccount(id);
   if (error) {
-    let message = "Pro services are not available yet. Please try again later.";
+    const status = error.context?.status;
+    let message = "Pro services could not complete this request. Please try again.";
+    if (error.name === "FunctionsFetchError") {
+      message = "Could not reach Pro services. Check your connection and that you opened StudyHive at its configured address, then retry.";
+    } else if (status === 401) {
+      message = "Pro services rejected your session (HTTP 401). Save your work, then sign out and sign in again.";
+    } else if (status === 403) {
+      message = "Pro services denied this request (HTTP 403). Check your account access and the StudyHive address you opened.";
+    } else if (typeof status === "number") {
+      message = `Pro services returned HTTP ${status}. Please retry; if this continues, report this status.`;
+    }
     try {
       const result = await error.context?.json();
-      if (result?.error) message = result.error;
+      if (typeof result?.error === "string" && result.error.trim()) {
+        message = result.error + (typeof status === "number" ? ` (HTTP ${status})` : "");
+      }
     } catch {}
     throw new Error(message);
   }

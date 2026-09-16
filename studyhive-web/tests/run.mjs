@@ -5,7 +5,7 @@ import path from 'node:path'
 
 const dir = await mkdtemp('.studyhive-tests-')
 try {
-  const entries = ['tests/regressions.test.tsx', 'tests/audit.test.tsx', 'tests/cloud.test.tsx', 'tests/auth.test.tsx', 'tests/pro.test.tsx', 'tests/billing.test.tsx']
+  const entries = ['tests/regressions.test.tsx', 'tests/audit.test.tsx', 'tests/cloud.test.tsx', 'tests/auth.test.tsx', 'tests/pro.test.tsx', 'tests/billing.test.tsx', 'tests/pro-request.test.tsx']
   await build({
     entryPoints: entries, outdir: dir, outExtension: { '.js': '.mjs' },
     bundle: true, platform: 'node', format: 'esm', packages: 'external',
