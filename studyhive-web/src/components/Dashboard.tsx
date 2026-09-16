@@ -1,4 +1,5 @@
 import { studyData } from '../services/studyData'
+import { cloudClient } from '../services/cloud/client'
 import { localDateKey, nextReminderDate } from '../services/dates'
 import { useEffect, useState } from 'react'
 import { useStore } from '../store'
@@ -291,15 +292,15 @@ const Dashboard = () => {
             <div className="flex items-center gap-4">
               <Crown className="w-12 h-12" />
               <div>
-                <h3 className="text-xl font-bold mb-1">Try the Premium Demo</h3>
-                <p className="text-amber-100">Preview the plan change. All study tools are available with either demo tier.</p>
+                <h3 className="text-xl font-bold mb-1">{cloudClient ? 'Explore StudyHive Pro' : 'Try the Premium Demo'}</h3>
+                <p className="text-amber-100">{cloudClient ? 'Turn your files into study materials with AI, and review flashcards with optional spaced repetition.' : 'Preview the plan change. All study tools are available with either demo tier.'}</p>
               </div>
             </div>
             <button
               onClick={() => setShowUpgradeModal(true)}
               className="bg-white text-amber-600 px-6 py-3 rounded-lg font-semibold hover:bg-amber-50 transition-colors"
             >
-              View Demo
+              {cloudClient ? 'View Pro' : 'View Demo'}
             </button>
           </div>
         </div>

@@ -4,12 +4,17 @@ import { cloudClient } from '../../services/cloud/client'
 import { useStore } from '../../store'
 import Layout from '../Layout'
 import CloudAuthForm from './CloudAuthForm'
+import ProPanel from '../Subscription/ProPanel'
 
 export default function CloudSession() {
   const [ready, setReady] = useState(false)
   const [error, setError] = useState('')
   const [recovery, setRecovery] = useState(new URLSearchParams(location.search).get('auth') === 'recovery')
   const [retry, setRetry] = useState(0)
+  const [billingReturn, setBillingReturn] = useState<"success" | "cancelled" | null>(() => {
+    const result = new URLSearchParams(location.search).get('billing')
+    return result === 'success' || result === 'cancelled' ? result : null
+  })
   const { currentUser } = useStore()
 
   useEffect(() => observeAccount(cloudClient!, {
@@ -38,5 +43,13 @@ export default function CloudSession() {
     history.replaceState(null, '', location.pathname)
     setRecovery(false)
   }} />
-  return <Layout key={currentUser.id} />
+  return <>
+    <Layout key={currentUser.id} />
+    {billingReturn && <ProPanel key={currentUser.id} billingReturn={billingReturn} onClose={() => {
+      const url = new URL(location.href)
+      url.searchParams.delete('billing')
+      history.replaceState(null, '', url.pathname + url.search + url.hash)
+      setBillingReturn(null)
+    }} />}
+  </>
 }

@@ -3,37 +3,71 @@ import { cloudClient } from "../../services/cloud/client";
 import { isPro, proRequest } from "../../services/pro";
 import { useStore } from "../../store";
 import { assertActiveAccount } from "../../services/studyMaterials";
-export default function ProPanel({ onClose }: { onClose: () => void }) {
+import { User } from "../../types";
+
+async function loadMembership(userId: number) {
+  if (!cloudClient) throw new Error("Cloud sign-in is required.");
+  const [info, profile, usage] = await Promise.all([
+    proRequest({ action: "billing-info" }),
+    cloudClient.from("users").select("*").eq("id", userId).single(),
+    cloudClient.rpc("ai_allowance"),
+  ]);
+  assertActiveAccount(userId);
+  if (profile.error) throw profile.error;
+  return {
+    enabled: Boolean(info.enabled),
+    user: profile.data as User,
+    allowance: usage.error ? null : usage.data as { limit: number; used: number },
+  };
+}
+
+export default function ProPanel({ onClose, billingReturn, load = loadMembership }: {
+  onClose: () => void;
+  billingReturn?: "success" | "cancelled";
+  load?: typeof loadMembership;
+}) {
   const user = useStore((s) => s.currentUser);
-  const [enabled, setEnabled] = useState(false),
+  const userId = user?.id;
+  const [enabled, setEnabled] = useState<boolean | null>(null),
+    [loading, setLoading] = useState(true),
+    [retry, setRetry] = useState(0),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [allowance, setAllowance] = useState<{
       limit: number;
       used: number;
     } | null>(null);
-  async function refresh() {
-    if (!user || !cloudClient) return;
-    try {
-      const info = await proRequest({ action: "billing-info" });
-      setEnabled(info.enabled);
-      const [profile, usage] = await Promise.all([
-        cloudClient.from("users").select("*").eq("id", user.id).single(),
-        cloudClient.rpc("ai_allowance"),
-      ]);
-      assertActiveAccount(user.id);
-      if (profile.error) throw profile.error;
-      useStore.getState().setUser(profile.data);
-      if (!usage.error) setAllowance(usage.data);
-    } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "Pro services are unavailable.",
-      );
-    }
-  }
   useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let attempts = 0;
+    setLoading(true);
+    setError("");
+    async function refresh() {
+      if (!userId) { setLoading(false); return; }
+      try {
+        const result = await load(userId);
+        if (cancelled) return;
+        assertActiveAccount(userId);
+        if (result.user.id !== userId) throw new Error("Membership belongs to a different account.");
+        setEnabled(result.enabled);
+        useStore.getState().setUser(result.user);
+        setAllowance(result.allowance);
+        // A redirect is only a cue to read the server-owned entitlement.
+        // Give Stripe's webhook time to arrive, then offer a manual retry.
+        if (billingReturn === "success" && !isPro() && ++attempts < 6) {
+          timer = setTimeout(() => void refresh(), 2000);
+          return;
+        }
+      } catch (e) {
+        if (cancelled) return;
+        setError(e instanceof Error ? e.message : "Pro services are unavailable.");
+      }
+      setLoading(false);
+    }
     void refresh();
-  }, []);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [userId, billingReturn, retry, load]);
   async function billing(action: "checkout" | "portal") {
     if (busy) return;
     setBusy(true);
@@ -75,6 +109,11 @@ export default function ProPanel({ onClose }: { onClose: () => void }) {
             ? "Your Pro membership is active."
             : "Your free notes, classes, timers and manual flashcards remain available."}
         </p>
+        {loading && <p role="status">Checking your membership…</p>}
+        {billingReturn === "success" && !loading && !error && !isPro() && (
+          <p role="status">Pro activation is still pending. Wait a moment, then refresh your membership. You do not need to check out again.</p>
+        )}
+        {billingReturn === "cancelled" && <p>Checkout was cancelled. You can try again when you are ready.</p>}
         {allowance && (
           <p>
             AI generations this month: {allowance.used} / {allowance.limit}.
@@ -90,12 +129,12 @@ export default function ProPanel({ onClose }: { onClose: () => void }) {
             {error}
           </p>
         )}
-        {!enabled && <p>Checkout is not configured yet.</p>}
+        {enabled === false && !loading && <p>Checkout is not configured yet.</p>}
         <div className="flex flex-wrap gap-3">
-          {!isPro() && (
+          {!isPro() && billingReturn !== "success" && (
             <button
               className="btn-primary px-4 py-3"
-              disabled={!enabled || busy}
+              disabled={!enabled || busy || loading}
               onClick={() => billing("checkout")}
             >
               Test Pro checkout
@@ -103,17 +142,17 @@ export default function ProPanel({ onClose }: { onClose: () => void }) {
           )}
           <button
             className="btn-secondary"
-            disabled={!enabled || busy}
+            disabled={!enabled || busy || loading}
             onClick={() => billing("portal")}
           >
             Manage subscription
           </button>
           <button
             className="btn-secondary"
-            disabled={busy}
+            disabled={busy || loading}
             onClick={() => {
               setError("");
-              void refresh();
+              setRetry(value => value + 1);
             }}
           >
             Refresh membership
