@@ -6,7 +6,7 @@ Use http://127.0.0.1:5173/ and your existing Pro account. The owner authorized u
 
 Open the connected project's Supabase SQL editor and run `supabase/operations/enable_ai_acceptance_tests.sql`. This sets the development allowance to six successful generations per Pro user per month. The script refuses to proceed unless exactly one account currently has active Pro and no AI jobs already exist in the current month. It does not change memberships or study materials. This global development setting is not a dollar spending cap.
 
-In StudyHive, open View Pro and click Refresh membership. Expect **0 / 6**. If the SQL guard fails or the allowance differs, stop and report the message rather than removing the guard.
+In StudyHive, open **Manage Pro** on the Dashboard (or **Settings → Membership & AI usage**) and click Refresh membership. Expect **0 / 6**. If the SQL guard fails or the allowance differs, stop and report the message rather than removing the guard.
 
 Use only the supplied small fixtures in `tests/fixtures/ai` for this round. Do not use a textbook or personal notes yet. Stop at the first generation error; send the error and test number before retrying. A failed generation can still cost the app money even when the student's allowance is refunded.
 
@@ -22,7 +22,7 @@ Expect no new notes and an unchanged **0 / 6** allowance. These checks should re
 
 ## Six AI generations
 
-Create a temporary class called **QA Test** to keep these results separate. Import all files into that class. After every generation, open View Pro and Refresh membership to check the counter.
+Create a temporary class called **QA Test** to keep these results separate. Import all files into that class. After every generation, open Manage Pro and Refresh membership to check the counter.
 
 | Test | What to do | Pass condition | Expected usage |
 | --- | --- | --- | --- |
@@ -53,7 +53,7 @@ No output should invent exam dates, references, grades, or unsupported facts. Ge
 4. Turn spaced repetition off. Normal study should still work; scheduled review should no longer be offered for that deck. Turning it back on should preserve existing schedules.
 5. Take and submit the generated quiz. Confirm the score/review is sensible and one attempt remains in Review after a reload.
 6. At **6 / 6**, request one more generation from the saved note. Expect **Monthly AI allowance reached**, no additional artifact, and usage still **6 / 6**. The server rejects this before a provider request.
-7. Open **Manage subscription** in View Pro. Confirm the Stripe sandbox portal opens with the existing subscription; return without changing or cancelling it for this test.
+7. Open **Manage subscription** in the membership panel. Confirm the Stripe sandbox portal opens with the existing subscription; return without changing or cancelling it for this test.
 
 Report: `TXT / PDF / DOCX / cards / quiz / guide / saved edits / optional review / quota / portal: pass or fail`, plus any exact error. A screenshot of incorrect generated material is useful; keep API keys and account credentials out of screenshots.
 

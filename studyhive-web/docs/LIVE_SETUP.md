@@ -85,3 +85,9 @@ The owner identified the failing browser origin as `http://localhost:4173/`. Swi
 The owner authorized a small AI acceptance-test round with up to **USD 1** of OpenAI API usage. Prepared matching, visually checked one-page PDF and Word documents plus a TXT sample, three invalid-file fixtures, a six-generation checklist, and guarded SQL to enable/disable the test allowance. The SQL was checked locally and all six mocked Edge Function tests passed without paid calls. See `AI_TEST_CHECKLIST.md`.
 
 The allowance change has **not** been applied remotely: dashboard control and authenticated Supabase administration are unavailable in the current tools. The owner must run the prepared development SQL in the Supabase SQL editor and confirm `0 / 6` in StudyHive. Six successful generations is a per-user monthly allowance, not a hard dollar cap. No live OpenAI request or paid AI test has run; actual usage and results remain to be recorded. Use only the small fixtures, stop on the first provider error, and disable new generations after the round.
+
+## Test allowance enabled — September 16
+
+The owner's screenshot confirms the enable query returned `test_allowance = 6`. A subsequent run stopped at the guard because AI attempts already exist this month. This later failure does not undo the first successful run, and does not establish whether those attempts succeeded, failed or incurred provider charges. Their results and actual spending remain unverified; do not rerun or bypass the enable guard.
+
+Fixed a membership navigation bug reported during testing: the Dashboard's upgrade banner was hidden for Premium users, removing their access to the Pro panel. Cloud accounts now retain the banner with **Manage Pro** for active members, and Settings has a permanent **Membership & AI usage** button. The production build passed and the local server returned HTTP 200. No server configuration, entitlement or usage record was changed by this UI fix.

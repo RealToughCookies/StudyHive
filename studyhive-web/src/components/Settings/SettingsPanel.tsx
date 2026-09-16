@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useStore } from '../../store'
 import { Save, User, Palette, Bell, Key, Crown, Timer, Moon, Sun, Keyboard } from 'lucide-react'
 import { ShortcutConfig, KeyboardShortcut, DEFAULT_SHORTCUTS } from '../../types'
+import ProPanel from '../Subscription/ProPanel'
 
 const SettingsPanel = () => {
   const { currentUser, settings, setSettings, applyTheme, applyDarkMode } = useStore()
@@ -29,6 +30,7 @@ const SettingsPanel = () => {
   const [rememberApiKey, setRememberApiKey] = useState(settings?.remember_api_key ?? Boolean(settings?.openai_api_key))
   const [apiKey, setApiKey] = useState(settings?.openai_api_key || '')
   const [saving, setSaving] = useState(false)
+  const [showPro, setShowPro] = useState(false)
 
   // Shortcuts
   const [shortcuts, setShortcuts] = useState<ShortcutConfig>(() => {
@@ -195,12 +197,14 @@ const SettingsPanel = () => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
                 />
               </div>
-              <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="flex flex-wrap items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                 <Crown className="w-5 h-5 text-amber-600" />
                 <span className="text-sm text-amber-800 capitalize font-medium">
                   {currentUser?.subscription_tier || 'free'} Plan
                 </span>
+                {cloudClient && <button className="btn-secondary ml-auto" onClick={() => setShowPro(true)}>Membership &amp; AI usage</button>}
               </div>
+              {cloudClient && showPro && <ProPanel onClose={() => setShowPro(false)} />}
             </div>
           </div>
 
