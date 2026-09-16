@@ -55,3 +55,6 @@ secrets/
 # Temporary test and build output
 .studyhive-tests-*/
 *.tsbuildinfo
+
+# Personal study data exports
+StudyHive-export-*.json

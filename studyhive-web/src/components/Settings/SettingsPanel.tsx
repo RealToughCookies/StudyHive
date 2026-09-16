@@ -5,6 +5,7 @@ import { useStore } from '../../store'
 import { Save, User, Palette, Bell, Key, Crown, Timer, Moon, Sun, Keyboard } from 'lucide-react'
 import { ShortcutConfig, KeyboardShortcut, DEFAULT_SHORTCUTS } from '../../types'
 import ProPanel from '../Subscription/ProPanel'
+import DataExport from './DataExport'
 
 const SettingsPanel = () => {
   const { currentUser, settings, setSettings, applyTheme, applyDarkMode } = useStore()
@@ -207,6 +208,8 @@ const SettingsPanel = () => {
               {cloudClient && showPro && <ProPanel onClose={() => setShowPro(false)} />}
             </div>
           </div>
+
+          {cloudClient && <DataExport />}
 
           {/* Theme Settings */}
           <div className="bg-white p-6 rounded-xl shadow-md">

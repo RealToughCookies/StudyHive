@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import { PGlite } from '@electric-sql/pglite'
 import { readCloudConfig } from '../src/services/cloud/client'
+import { EXPORT_TABLES } from '../src/services/accountExport'
 
 const db = new PGlite()
 const alice = '11111111-1111-4111-8111-111111111111'
@@ -41,6 +42,14 @@ before(async () => {
   bobId = (await asUser(bob, 'select id from public.users'))[0].id
 })
 after(() => db.close())
+
+test('export fields match the deployed schema and are readable only for the current owner', async () => {
+  for (const [table, fields] of Object.entries(EXPORT_TABLES)) {
+    const rows = await asUser(alice, `select ${fields} from public.${table}`)
+    assert.ok(rows.every(row => row.user_id === aliceId), table)
+    assert.deepEqual(await asUser(bob, `select ${fields} from public.${table} where user_id = $1`, [aliceId]), [])
+  }
+})
 
 test('cloud configuration fails closed and refuses privileged keys', () => {
   assert.throws(() => readCloudConfig({}), /Connect a Supabase/)

@@ -40,4 +40,7 @@ Put `VITE_DATA_MODE=local` in `.env.local` and run `npm run dev`. This explicitl
 
 After connecting a project, verify with two test accounts and a second browser: verification links, reload/session restoration, sign-out, password reset and expired links; persistence across devices; direct attempts to read/write the other account's IDs/files; competing note edits; and attachment upload/download. Check production redirects on the actual host.
 
-Before accepting public users, finish subscriptions/server AI, local import, account export/deletion, abuse controls, per-account storage limits, orphan-file cleanup, backups, monitoring and privacy/terms. Configure the host's security headers and HTTPS. Clearing an account in the Auth dashboard cascades database rows; private storage objects still require server-side cleanup. Do not expose an account-deletion button until that cleanup workflow exists.
+Before accepting public users, finish subscriptions/server AI, local import, account deletion, abuse controls, per-account storage limits, orphan-file cleanup, backups, monitoring and privacy/terms. Configure the host's security headers and HTTPS. Clearing an account in the Auth dashboard cascades database rows; private storage objects still require server-side cleanup. Do not expose an account-deletion button until that cleanup workflow exists.
+
+
+Study data export is available to both cloud plans in Settings, including saved tables and registered attachment bytes. See `DATA_EXPORT.md` for its 50 MB limit, format, and snapshot/restore limitations.
