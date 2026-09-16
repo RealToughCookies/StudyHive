@@ -27,18 +27,18 @@ Generated plain text is escaped before entering the rich-text editor. Documents 
 
 Successful imports remove their temporary upload. Failed/abandoned uploads can remain under the private `<user_id>/ai/` prefix; add scheduled cleanup before public launch. A process crash leaves a pending reservation until another generation expires it after 10 minutes. Do not automatically retry paid provider calls. A paid response lost before artifact persistence can still incur operator cost without using the student's allowance.
 
-No public deployment, production SMTP, account export/deletion, automated backups/monitoring, or public subscription launch is included in this coding milestone. The existing personal-note recovery is complete; a general local-workspace importer remains future work.
+Public hosting, production SMTP, automated backups/monitoring and live subscription launch remain pending. Account export is implemented and owner-confirmed; account deletion is implemented locally but needs the deployment and disposable-account checks in `ACCOUNT_DELETION.md`. The existing personal-note recovery is complete; a general local-workspace importer remains future work.
 
 ## Verification commands
 
 ```sh
 npm test
 npm run build
-npx --yes deno check supabase/functions/pro-service/index.ts supabase/functions/stripe-webhook/index.ts
-npx --yes deno test --allow-env supabase/functions/pro-service/handler.test.ts supabase/functions/stripe-webhook/handler.test.ts
+npx --yes deno check supabase/functions/pro-service/index.ts supabase/functions/stripe-webhook/index.ts supabase/functions/delete-account/index.ts
+npx --yes deno test --allow-env supabase/functions/pro-service/handler.test.ts supabase/functions/stripe-webhook/handler.test.ts supabase/functions/delete-account/handler.test.ts
 ```
 
-The Deno tests use mocked provider fetches and no network permission. PostgreSQL tests apply both real migrations and exercise database roles, ownership, scheduling, quota and billing leases.
+The Deno tests use mocked provider fetches and no network permission. PostgreSQL tests apply all three real migrations and exercise database roles, ownership, scheduling, quota and billing leases.
 
 ## Provider references
 

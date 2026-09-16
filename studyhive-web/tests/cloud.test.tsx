@@ -35,6 +35,7 @@ before(async () => {
   `)
   await db.exec(await readFile('supabase/migrations/20260909000000_cloud_foundation.sql', 'utf8'))
   await db.exec(await readFile('supabase/migrations/20260914000000_pro_services.sql', 'utf8'))
+  await db.exec(await readFile('supabase/migrations/20260916000000_account_deletion.sql', 'utf8'))
   await db.query(`insert into auth.users(id,email,raw_user_meta_data,email_confirmed_at) values
     ($1,'alice@example.test','{"username":"Alice","subscription_tier":"premium"}',now()),
     ($2,'bob@example.test','{"username":"Bob"}',now())`, [alice, bob])
@@ -196,4 +197,50 @@ test('billing synchronization rejects forged clients and stale lease holders',as
  await assert.rejects(db.query("select public.apply_billing_sync('cus_test',$1,now()+interval '1 day')",['eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee']),/lock expired/)
  await db.query("select public.apply_billing_sync('cus_test',$1,null)",[token])
  assert.equal((await asUser(alice,'select public.has_pro() as pro'))[0].pro,false)
+})
+
+test('deletion is server-only, pauses for active work and blocks new writes while keeping retry access', async () => {
+ const token='ffffffff-ffff-4fff-8fff-ffffffffffff'
+ await assert.rejects(asUser(alice,'select public.begin_account_deletion($1,$2)',[aliceId,token]),/permission denied/)
+ await assert.rejects(asUser(alice,'select * from public.account_deletions'),/permission denied/)
+ await db.query("select public.claim_billing_sync('cus_test',$1)",[token])
+ await assert.rejects(db.query('select public.begin_account_deletion($1,$2)',[aliceId,token]),/still processing/)
+ await db.query("select public.apply_billing_sync('cus_test',$1,now()+interval '1 day')",[token])
+ await db.exec('update public.pro_config set monthly_generations=10')
+ await db.query("select public.reserve_ai_job($1,$2,'last','notes')",[aliceId,token])
+ await assert.rejects(db.query('select public.begin_account_deletion($1,$2)',[aliceId,token]),/still processing/)
+ await db.query("update public.ai_jobs set created_at=now()-interval '11 minutes' where id=$1",[token])
+ await asUser(alice,"insert into storage.objects(bucket_id,name) values ('study-files',$1)",[`${aliceId}/ai/retained.txt`])
+ await asUser(bob,"insert into storage.objects(bucket_id,name) values ('study-files',$1)",[`${bobId}/private.txt`])
+ const [cls]=await asUser(alice,"insert into public.classes(name) values ('Cascade class') returning id")
+ const [note]=await asUser(alice,"insert into public.notes(class_id,title,content) values ($1,'Cascade note','x') returning id",[cls.id])
+ await asUser(alice,"select public.create_flashcard_deck('Cascade deck',$1,$2,$3)",[JSON.stringify([{front:'Q',back:'A'}]),cls.id,note.id])
+ await db.query('select public.begin_account_deletion($1,$2)',[aliceId,token])
+ await assert.rejects(db.query('select public.begin_account_deletion($1,$2)',[aliceId,token]),/already processing/)
+ assert.equal((await asUser(alice,'select * from public.settings')).length,1)
+ await assert.rejects(asUser(alice,"insert into public.notes(title,content) values ('new','blocked')"),/deletion is in progress/)
+ await assert.rejects(asUser(alice,"update public.notes set title='blocked'"),/deletion is in progress/)
+ await assert.rejects(asUser(alice,"insert into storage.objects(bucket_id,name) values ('study-files',$1)",[`${aliceId}/late.txt`]),/deletion is in progress/)
+ await assert.rejects(db.query("select public.claim_billing_sync('cus_test',$1)",[token]),/deletion is in progress/)
+ await assert.rejects(db.query("select public.finish_ai_job($1,$2,'Late AI','body',null)",[aliceId,token]),/deletion is in progress/)
+ await assert.rejects(asUser(alice,'select * from public.deletion_file_batch($1,$2)',[aliceId,token]),/permission denied/)
+ await assert.rejects(db.query('select * from public.deletion_file_batch($1,$2)',[bobId,token]),/lease expired/)
+ const files=(await db.query<any>('select * from public.deletion_file_batch($1,$2)',[aliceId,token])).rows
+ assert.ok(files.some(f=>f.name===`${aliceId}/ai/retained.txt`))
+ assert.ok(files.every(f=>f.name.startsWith(`${aliceId}/`)))
+ await asUser(bob,"insert into public.notes(title,content) values ('Other account','still works')")
+})
+
+test('deleting Auth cascades every application table and old tokens cannot access study data', async () => {
+ // Mock storage service deletion of bytes completed; now exercise actual FK cascades.
+ await db.query("delete from storage.objects where split_part(name,'/',1)=$1",[String(aliceId)])
+ await db.query('delete from auth.users where id=$1',[alice])
+ for (const table of ['users',...Object.keys(EXPORT_TABLES),'billing_customers','account_deletions','ai_jobs']) {
+  const key=table==='users'?'id':'user_id'
+  assert.equal((await db.query(`select * from public.${table} where ${key}=$1`,[aliceId])).rows.length,0,table)
+ }
+ assert.deepEqual(await asUser(alice,'select * from public.notes'),[])
+ await assert.rejects(asUser(alice,"insert into public.notes(title,content) values ('Old token','blocked')"),/deletion is in progress|null value|row-level security/)
+ assert.equal((await asUser(bob,"select * from public.notes where title='Other account'")).length,1)
+ assert.equal((await asUser(bob,'select * from storage.objects')).length,1)
 })

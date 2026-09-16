@@ -19,8 +19,9 @@ export function appOrigin() {
     url.password ||
     (url.protocol !== "https:" &&
       !["localhost", "127.0.0.1"].includes(url.hostname))
-  )
+  ) {
     throw new HttpError(503, "Invalid app origin configuration");
+  }
   return url.origin;
 }
 export function json(value: unknown, status = 200, origin?: string) {
@@ -31,31 +32,42 @@ export function json(value: unknown, status = 200, origin?: string) {
       "Cache-Control": "no-store",
       ...(origin
         ? {
-            "Access-Control-Allow-Origin": origin,
-            "Access-Control-Allow-Headers":
-              "authorization, apikey, content-type, x-client-info",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            Vary: "Origin",
-          }
+          "Access-Control-Allow-Origin": origin,
+          "Access-Control-Allow-Headers":
+            "authorization, apikey, content-type, x-client-info",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          Vary: "Origin",
+        }
         : {}),
     },
   });
 }
-export async function userContext(req: Request) {
+export async function userContext(req: Request, allowDeletion = false) {
   const header = req.headers.get("authorization");
-  if (!header?.startsWith("Bearer "))
+  if (!header?.startsWith("Bearer ")) {
     throw new HttpError(401, "Sign in to continue.");
+  }
   const db = admin();
   const { data, error } = await db.auth.getUser(header.slice(7));
-  if (error || !data.user?.email_confirmed_at)
+  if (error || !data.user?.email_confirmed_at) {
     throw new HttpError(401, "Sign in with a verified account.");
+  }
   const { data: profile, error: profileError } = await db
     .from("users")
-    .select("id,subscription_tier,subscription_expires_at")
+    .select(
+      "id,subscription_tier,subscription_expires_at,deletion_requested_at",
+    )
     .eq("auth_user_id", data.user.id)
     .single();
-  if (profileError || !profile)
+  if (profileError || !profile) {
     throw new HttpError(401, "Account unavailable.");
+  }
+  if (profile.deletion_requested_at && !allowDeletion) {
+    throw new HttpError(
+      409,
+      "Account deletion is in progress. Return to Settings to finish deleting your account.",
+    );
+  }
   const scoped = createClient(env("SUPABASE_URL"), env("SUPABASE_ANON_KEY"), {
     global: { headers: { Authorization: header } },
     auth: { persistSession: false, autoRefreshToken: false },
@@ -83,11 +95,12 @@ export async function stripe(
   idempotency?: string,
 ) {
   const key = env("STRIPE_SECRET_KEY");
-  if (!key.startsWith("sk_test_"))
+  if (!key.startsWith("sk_test_")) {
     throw new HttpError(
       503,
       "Only Stripe test mode is enabled for this build.",
     );
+  }
   const res = await fetch("https://api.stripe.com/v1/" + path, {
     method,
     headers: {
@@ -101,7 +114,8 @@ export async function stripe(
     body: fields ? new URLSearchParams(fields) : undefined,
     signal: AbortSignal.timeout(20000),
   });
-  if (!res.ok)
+  if (!res.ok) {
     throw new HttpError(502, "Payment provider unavailable. Please try again.");
+  }
   return await res.json();
 }

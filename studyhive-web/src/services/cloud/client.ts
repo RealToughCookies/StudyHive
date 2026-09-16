@@ -17,6 +17,12 @@ export function readCloudConfig(env: Record<string, string | boolean | undefined
 
 // Tests import feature modules without Vite; their existing local database fixture remains usable.
 const config = import.meta.env ? readCloudConfig(import.meta.env) : null
+export function createReauthClient() {
+  if (!config) throw new Error('Account deletion requires a cloud account.')
+  return createClient(config.url, config.key, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'studyhive-reauth' },
+  })
+}
 export const cloudClient = config ? createClient(config.url, config.key, {
   auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
 }) : null
