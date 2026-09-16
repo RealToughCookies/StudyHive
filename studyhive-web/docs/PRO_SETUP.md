@@ -1,6 +1,6 @@
 # Pro implementation and test setup
 
-The Pro migration and both Edge Functions were deployed to the connected Supabase project on September 14, 2026. **Provider credentials are still missing, so checkout and AI generation are not enabled.** Checkout and webhooks accept Stripe test mode only. The AI allowance defaults to zero. No subscription price is hardcoded or publicly promised.
+The Pro migration and both Edge Functions were deployed to the connected Supabase project on September 14, 2026. Provider credentials have since been entered privately. The owner confirmed Pro activation after correcting the Stripe webhook signing secret and retrying delivery. Checkout and webhooks accept Stripe test mode only. The AI allowance defaults to zero; see `AI_TEST_CHECKLIST.md` for the authorized development test round and its pending allowance setup. No subscription price is hardcoded or publicly promised.
 
 ## Included
 

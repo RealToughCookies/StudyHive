@@ -1,0 +1,20 @@
+Cell Biology Structures and Transport
+
+Cells maintain internal conditions through specialized structures and controlled transport. These notes explain organelle functions, membrane transport, and a simple osmosis experiment.
+
+Cell structures
+The plasma membrane is a selectively permeable boundary built mainly from a phospholipid bilayer and proteins. It controls movement into and out of a cell.
+The nucleus contains most of a eukaryotic cell's DNA. Ribosomes assemble proteins from amino acids using instructions carried by messenger RNA.
+The rough endoplasmic reticulum has attached ribosomes and helps process proteins destined for secretion or membranes. The Golgi apparatus modifies and sorts proteins for delivery.
+Mitochondria produce much of the ATP used by eukaryotic cells during aerobic respiration. Chloroplasts carry out photosynthesis in plants and algae.
+Plant cell walls provide structural support and contain cellulose. A large central vacuole stores water and contributes to turgor pressure in many plant cells.
+
+Movement across membranes
+Diffusion is the net movement of particles down their concentration gradient. Simple diffusion crosses the lipid bilayer directly; facilitated diffusion uses membrane proteins. Neither process directly requires ATP.
+Osmosis is the net movement of water across a selectively permeable membrane. In the simple experiment below, water moves toward the side with a higher concentration of dissolved solute.
+Active transport moves substances against an electrochemical gradient using an energy source. The sodium-potassium pump uses ATP to move three sodium ions out and two potassium ions into the cell per cycle.
+Endocytosis brings material into a cell using vesicles. Exocytosis releases material when vesicles fuse with the plasma membrane.
+
+Osmosis experiment
+A membrane separates solution A, containing 2 percent sucrose, from solution B, containing 10 percent sucrose. The membrane allows water through but blocks sucrose. Assume equal initial pressure on both sides.
+Water initially moves from A toward B. This illustrates osmosis; sucrose does not cross the membrane. Changing the membrane so that sucrose can cross would change the experiment.
