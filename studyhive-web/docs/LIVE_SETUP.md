@@ -104,3 +104,27 @@ Added **Settings → Export your study data** for all cloud plans. The download 
 Implemented the Settings confirmation/password flow, server-verified recent-password authentication, a durable deletion marker and write guards, billing cancellation, private-file cleanup and Auth deletion last. New SQL is additive and deletes no accounts when applied. Deletion remains disabled until the new function and migration pass the status check. See `ACCOUNT_DELETION.md` for deployment order, retry limitations and disposable-account checks. Dashboard-ready bundles can be built with `node scripts/build-edge-bundles.mjs`.
 
 Validation: 88 Node/React/PostgreSQL tests and 12 mocked Edge Function tests passed, including actual migration/RLS/cascade behavior, wrong-password and account-switch rejection, cancellation/storage failure handling and retry. Production build and Deno type checks passed. No owner account was deleted, no subscription was canceled, and no live provider test call was made. The new migration/functions have **not been deployed**: this session has no authenticated Supabase deployment tool or browser control. Hosted Auth/Storage/Stripe acceptance checks remain pending.
+
+The owner subsequently confirmed applying `20260916000000_account_deletion.sql` in the SQL editor. This is user-reported completion, not an independent schema verification. Do not replay this migration. Updating `pro-service` and `stripe-webhook`, deploying `delete-account`, and disposable-account acceptance checks remain pending.
+
+The owner supplied the deployed `delete-account` endpoint. Independent non-destructive HTTP checks now pass: configured-origin OPTIONS returns 200, unauthenticated POST with action=status returns 401 (Sign in to continue), and foreign-origin OPTIONS returns 403. This verifies endpoint availability and those request guards, not the authenticated schema/status flow or deletion of a disposable account. Deployment versions of the other two functions remain unverified. No deletion request was sent.
+
+## Signup recovery — September 21
+
+Reproduced local connection refusal on port 5173 and restarted Vite on the configured 127.0.0.1 origin; HTTP now returns 200. Added a confirmation-email resend form using Supabase Auth resend and a fixed same-origin redirect, plus a safe explanation for error callbacks. Two regression tests failed before the UI change and passed afterward; all 90 Node/React/PostgreSQL tests and the production build passed. No live confirmation email was sent by the agent. The owner still needs to verify the disposable test account with a fresh link before resuming account-deletion acceptance checks. Changes are local; the previous temporary Git checkout is no longer a usable repository.
+
+## Disposable-account deletion verified — September 21
+
+The owner reported successful deletion, failed subsequent login for the disposable account, and intact main-account notes. A read-only SQL query through the authenticated Supabase dashboard independently returned zero matching Auth users and application profiles for the supplied test email, zero profiles without Auth owners, zero ownerless rows across all 15 study/billing/deletion child tables, and zero study-files objects whose owner prefix has no application profile. No note/file contents were read and no deletion was performed by this verification. This validates the reported test account cleanup in active database and Storage metadata; it does not verify provider backup retention or Pro subscription cancellation. The private email is deliberately omitted from this repository record.
+
+## Pro deletion test baseline — September 21
+
+Read-only dashboard checks identified the recreated disposable account as application profile 7, tier premium, mapped to sandbox customer `cus_VIkgy41uo0Jbe7`. Stripe shows subscription `sub_1UI9CQ5a48H6cFVpZ43aFMai` Active for StudyHive Pro (Test), USD 10/year, starting September 21. This is the baseline before user-performed account deletion; cancellation is not yet verified. The checkout customer email differs from the login email, so attribution uses the server-owned billing mapping rather than email matching.
+
+## Pro account-deletion test passed — September 21
+
+After the owner deleted disposable profile 7 through StudyHive, a refreshed Stripe sandbox subscription page showed `sub_1UI9CQ5a48H6cFVpZ43aFMai` Canceled, with an end time on September 21. A read-only Supabase query returned zero for the matching Auth account, profile 7, all study-files objects under prefix 7/, and each of the 15 child tables (including billing_customers and account_deletions). This verifies the sandbox Pro deletion/cancellation path and active database/storage cleanup. No extra cancellation or deletion was performed during verification. Renewal, failed-payment handling, event-redelivery and production-mode acceptance remain separate checks; backup retention and physical provider erasure were not assessed.
+
+## Hosted beta preparation — September 21
+
+Prepared a Cloudflare Pages recipe targeting the existing repository’s studyhive-web directory, Node 22 selection, and static response headers. Only public Supabase build configuration belongs on the frontend host. Hosting account connection, deployment, actual HTTPS address and Auth/APP_ORIGIN cutover remain pending. No hosting subscription was purchased, no provider secret was changed, and no live payment mode was enabled.

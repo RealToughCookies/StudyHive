@@ -1,6 +1,6 @@
 # Account deletion
 
-Implemented and tested locally; **not deployed or tested against a real account yet**. Settings checks for the server function and migration before enabling deletion. Free and Pro accounts use the same flow. Never use the owner's account for acceptance testing.
+Deployed to the development Supabase project. Disposable Free and Stripe-test Pro account deletion passed on September 21; live queries confirmed database/file cleanup, and Stripe showed the mapped test subscription canceled. See `LIVE_SETUP.md`. Settings checks for the server function and migration before enabling deletion. Free and Pro accounts use the same flow. Never use the owner's account for acceptance testing.
 
 The user enters their password and types `DELETE`. Password verification uses an isolated, nonpersistent Supabase Auth session. Only that session's bearer token is sent to the Edge Function. The function verifies the exact token through Auth, then requires a password AMR timestamp within five minutes and the matching subject. It ignores supplied owner IDs and derives the profile from the verified user.
 

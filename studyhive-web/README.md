@@ -1,8 +1,8 @@
 # StudyHive
 
-StudyHive is a browser study workspace for college students, built with React, TypeScript, Vite and Supabase. The cloud foundation supports real accounts, password recovery, private study data and attachments. Pro billing, included AI and optional spaced repetition are the next stage; the service is not ready for public launch yet.
+StudyHive is a browser study workspace for college students, built with React, TypeScript, Vite and Supabase. The cloud foundation supports real accounts, password recovery, private study data and attachments. Test-mode Pro billing, included AI, optional spaced repetition, data export and account deletion are implemented. Public launch requirements remain; see the hosted beta guide.
 
-See [the product agreement](docs/PRODUCT.md) and [cloud setup instructions](docs/CLOUD_SETUP.md).
+See [the product agreement](docs/PRODUCT.md), [cloud setup instructions](docs/CLOUD_SETUP.md) and [hosted beta setup](docs/HOSTED_BETA.md).
 
 ## Run locally
 
@@ -14,7 +14,7 @@ npm ci
 npm run dev
 ```
 
-Open the URL printed by Vite (normally http://localhost:5173). Create and verify a cloud account to begin. To use the old browser-only demo without a provider, explicitly set `VITE_DATA_MODE=local` in `.env.local`.
+Open the URL printed by Vite (use http://127.0.0.1:5173 for the currently configured backend). Create and verify a cloud account to begin. To use the old browser-only demo without a provider, explicitly set `VITE_DATA_MODE=local` in `.env.local`.
 
 ```sh
 npm test          # Regression tests for timers, settings, and account state
@@ -29,12 +29,12 @@ The active source is a browser application. It does not currently include an Ele
 - Classes with color labels and organized notes, flashcards, and quizzes.
 - Rich-text notes with autosave, formatting, lists, tables, images, and file attachments.
 - Manual flashcard decks and keyboard-controlled study sessions.
-- AI generation using a personal key remains available only in the local demo. Included cloud Pro AI and quizzes are pending implementation.
+- AI generation using a personal key remains available only in the local demo. Cloud Pro includes server-managed AI notes, flashcards, study guides and quizzes with a monthly allowance.
 - One shared Pomodoro timer across the timer page, floating timer, and focus mode. Long breaks follow every fourth completed work session.
 - Dashboard statistics, study streaks, calendar reminders with repeat options, and review history.
 - Draggable sticky notes, five color themes, independent dark mode, and configurable keyboard shortcuts.
 
-Document files can be attached and downloaded. The browser file-selection/read helpers exist, but a document-to-note import workflow is not currently exposed in the UI.
+Document files can be attached and downloaded. Cloud Pro can turn text-based PDF, DOCX and TXT uploads into editable notes.
 
 ## Local demo data and accounts
 

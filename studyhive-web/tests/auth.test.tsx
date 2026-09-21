@@ -137,3 +137,25 @@ test('leaving an editor waits for durability and remains blocked after a failed 
   unregister()
   assert.equal(await savePendingEdits(), true)
 })
+
+test('expired email callbacks explain recovery and provide a signup confirmation resend', async () => {
+  dom.reconfigure({ url: 'http://localhost/studyhive/?error_code=otp_expired#error=access_denied' })
+  let received: any
+  act(() => { root = create(<CloudAuthForm recovery={false} authenticated={false} onRecovered={() => {}} auth={{ resend: async (input: any) => { received = input; return { error: null } } } as any} />) })
+  assert.ok(text().includes('invalid or expired'))
+  act(() => button('Resend confirmation email').props.onClick())
+  fill('email', ' student@example.test ')
+  assert.equal(root!.root.findAllByType('input').some(i => i.props.type === 'password'), false)
+  await submit()
+  assert.deepEqual(received, { type: 'signup', email: 'student@example.test', options: { emailRedirectTo: 'http://localhost/studyhive/' } })
+  assert.ok(text().includes('If this email has an unconfirmed account'))
+})
+
+test('confirmation resend reports delivery failures without claiming an email was sent', async () => {
+  act(() => { root = create(<CloudAuthForm recovery={false} authenticated={false} onRecovered={() => {}} auth={{ resend: async () => ({ error: new Error('Email rate limit exceeded') }) } as any} />) })
+  act(() => button('Resend confirmation email').props.onClick())
+  fill('email', 'student@example.test')
+  await submit()
+  assert.ok(text().includes('Email rate limit exceeded'))
+  assert.ok(!text().includes('If this email has an unconfirmed account'))
+})
