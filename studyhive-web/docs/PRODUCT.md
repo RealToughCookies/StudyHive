@@ -24,3 +24,7 @@ The old local demo remains explicitly selectable. Its local accounts, API-key fe
 ## File capacity implementation — 2026-09-22
 
 Added server-enforced beta file counts (25 Free / 100 active Pro), transactional accounting, and a Settings usage panel. Existing files survive downgrade/overage. Migration and hosted Storage API checks are pending; see STORAGE_LIMITS.md. Orphan cleanup and signup abuse controls remain separate launch work.
+
+## Abuse and upload cleanup implementation — 2026-09-22
+
+Added owner-confirmed cleanup for old unregistered uploads (saved attachments protected), and optional Turnstile integration across public auth forms and deletion reauthentication. Code is tested on the launch branch, not enabled in production. See STORAGE_LIMITS.md and ABUSE_PROTECTION.md for ordered deployment and external configuration checks.

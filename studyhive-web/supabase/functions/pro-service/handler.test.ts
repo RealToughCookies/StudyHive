@@ -186,3 +186,33 @@ Deno.test("free users cannot spend AI budget", async () => {
     globalThis.fetch = old;
   }
 });
+
+Deno.test('Free-account cleanup uses verified ownership and removes bytes only through Storage', async () => {
+  const old=globalThis.fetch;
+  let claims=0,removals=0,failRemoval=false;
+  globalThis.fetch=async(input,init)=>{
+    const url=new URL(typeof input==='string'?input:input instanceof URL?input.href:input.url);
+    const reply=(value:unknown,status=200)=>Promise.resolve(new Response(JSON.stringify(value),{status,headers:{'content-type':'application/json'}}));
+    if(url.pathname==='/auth/v1/user') return reply({id:'11111111-1111-4111-8111-111111111111',email_confirmed_at:'2026-01-01'});
+    if(url.pathname==='/rest/v1/users') return reply({id:7,subscription_tier:'free'});
+    if(url.pathname==='/rest/v1/rpc/claim_unused_uploads') {
+      claims++;assert(JSON.parse(String(init?.body)).owner_ref===7,'caller owner must not be trusted');
+      return reply([{path:'7/ai/old.txt'}]);
+    }
+    if(url.pathname==='/storage/v1/object/study-files') {
+      removals++;assert(init?.method==='DELETE','must call byte-removal API');
+      assert(JSON.stringify(JSON.parse(String(init?.body)).prefixes)==='["7/ai/old.txt"]','only claimed paths');
+      return failRemoval?reply({message:'unavailable'},503):reply([{name:'7/ai/old.txt'}]);
+    }
+    throw Error('Unexpected request '+url.pathname);
+  };
+  try {
+    const denied=await handleRequest(req({action:'cleanup-uploads',userId:999}));
+    assert(denied.status===400 && claims===0,'confirmation required before claim');
+    const response=await handleRequest(req({action:'cleanup-uploads',userId:999,confirmation:'REMOVE UNUSED UPLOADS'}));
+    assert(response.status===200 && (await response.json()).removed===1,'verified free owner cleanup');
+    failRemoval=true;
+    const failed=await handleRequest(req({action:'cleanup-uploads',confirmation:'REMOVE UNUSED UPLOADS'}));
+    assert(failed.status===502 && removals===2,'failed deletion must not claim success');
+  } finally {globalThis.fetch=old;}
+});

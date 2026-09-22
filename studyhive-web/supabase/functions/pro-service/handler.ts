@@ -1,3 +1,4 @@
+import { cleanUnusedUploads } from "../_shared/upload-cleanup.ts";
 import {
   appOrigin,
   body,
@@ -32,6 +33,11 @@ export async function handleRequest(req: Request) {
     const { db, scoped, profile } = ctx;
     if (!input || typeof input !== "object" || Array.isArray(input))
       throw new HttpError(400, "Invalid request.");
+    if (input.action === "cleanup-uploads") {
+      if (input.confirmation !== "REMOVE UNUSED UPLOADS")
+        throw new HttpError(400, "Confirm unused-upload cleanup first.");
+      return json(await cleanUnusedUploads(db, profile.id), 200, origin);
+    }
     if (input.action === "billing-info") {
       const enabled =
         !!Deno.env.get("STRIPE_SECRET_KEY")?.startsWith("sk_test_") &&

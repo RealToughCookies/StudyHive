@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import Turnstile, { turnstileSiteKey } from '../Auth/Turnstile'
 import { accountDeletionStatus, deleteAccount } from '../../services/accountDeletion'
 
 export default function AccountDeletion() {
@@ -9,6 +10,8 @@ export default function AccountDeletion() {
   const [confirmation, setConfirmation] = useState('')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('Checking availability…')
+  const [captchaToken, setCaptchaToken] = useState('')
+  const [challenge, setChallenge] = useState(0)
   const running = useRef(false)
   useEffect(() => {
     let active = true
@@ -20,11 +23,11 @@ export default function AccountDeletion() {
   }, [])
   async function remove(event: React.FormEvent) {
     event.preventDefault()
-    if (running.current) return
+    if (running.current || (turnstileSiteKey && !captchaToken)) return
     running.current = true; setBusy(true); setMessage('Canceling your subscription and removing your account…')
-    try { await deleteAccount(password, confirmation) }
+    try { await deleteAccount(password, confirmation, undefined, undefined, captchaToken) }
     catch (error) { setMessage(error instanceof Error ? error.message : 'Deletion could not finish. Retry in Settings.') }
-    finally { setPassword(''); setBusy(false); running.current = false }
+    finally { setPassword(''); setBusy(false); running.current = false; setCaptchaToken(''); setChallenge(n => n + 1) }
   }
   return <section className="bg-white p-6 rounded-xl shadow-md space-y-4 border border-red-200" aria-labelledby="delete-account-title">
     <h2 id="delete-account-title" className="text-xl font-bold text-gray-900">Delete account</h2>
@@ -39,8 +42,9 @@ export default function AccountDeletion() {
       <label className="block text-gray-900">Type DELETE to confirm
         <input autoComplete="off" spellCheck={false} required disabled={busy} value={confirmation} onChange={event => setConfirmation(event.target.value)} className="block w-full rounded-lg border p-3 mt-1" />
       </label>
+      <Turnstile key={challenge} onToken={setCaptchaToken} />
       <div className="flex flex-wrap gap-3">
-        <button type="submit" disabled={busy || !password || confirmation !== 'DELETE'} className="px-4 py-3 rounded-lg bg-red-700 text-white disabled:opacity-50">{busy ? 'Deleting…' : 'Permanently delete account'}</button>
+        <button type="submit" disabled={busy || !password || confirmation !== 'DELETE' || (!!turnstileSiteKey && !captchaToken)} className="px-4 py-3 rounded-lg bg-red-700 text-white disabled:opacity-50">{busy ? 'Deleting…' : 'Permanently delete account'}</button>
         <button type="button" disabled={busy} className="btn-secondary px-4 py-3" onClick={() => { setOpened(false); setPassword(''); setConfirmation(''); setMessage('') }}>Close</button>
       </div>
       <p className="text-sm text-gray-600">Once deletion starts, it cannot be canceled. If cleanup is interrupted, sign in and retry here.</p>

@@ -28,7 +28,7 @@ before(async () => {
     grant usage on schema auth, storage, public to anon, authenticated;
     grant execute on function auth.uid() to anon, authenticated;
     create table storage.buckets(id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
-    create table storage.objects(id bigint generated always as identity primary key, bucket_id text, name text);
+    create table storage.objects(id bigint generated always as identity primary key, bucket_id text, name text, created_at timestamptz default now());
     alter table storage.objects enable row level security;
     grant select, insert, update, delete on storage.objects to authenticated;
     create function storage.foldername(text) returns text[] language sql immutable as $$ select string_to_array($1, '/') $$;
@@ -36,6 +36,8 @@ before(async () => {
   await db.exec(await readFile('supabase/migrations/20260909000000_cloud_foundation.sql', 'utf8'))
   await db.exec(await readFile('supabase/migrations/20260914000000_pro_services.sql', 'utf8'))
   await db.exec(await readFile('supabase/migrations/20260916000000_account_deletion.sql', 'utf8'))
+  await db.exec(await readFile('supabase/migrations/20260922000000_storage_limits.sql', 'utf8'))
+  await db.exec(await readFile('supabase/migrations/20260922010000_upload_cleanup.sql', 'utf8'))
   await db.query(`insert into auth.users(id,email,raw_user_meta_data,email_confirmed_at) values
     ($1,'alice@example.test','{"username":"Alice","subscription_tier":"premium"}',now()),
     ($2,'bob@example.test','{"username":"Bob"}',now())`, [alice, bob])
@@ -235,7 +237,7 @@ test('deleting Auth cascades every application table and old tokens cannot acces
  // Mock storage service deletion of bytes completed; now exercise actual FK cascades.
  await db.query("delete from storage.objects where split_part(name,'/',1)=$1",[String(aliceId)])
  await db.query('delete from auth.users where id=$1',[alice])
- for (const table of ['users',...Object.keys(EXPORT_TABLES),'billing_customers','account_deletions','ai_jobs']) {
+ for (const table of ['users',...Object.keys(EXPORT_TABLES),'billing_customers','account_deletions','ai_jobs','file_usage','upload_cleanup']) {
   const key=table==='users'?'id':'user_id'
   assert.equal((await db.query(`select * from public.${table} where ${key}=$1`,[aliceId])).rows.length,0,table)
  }

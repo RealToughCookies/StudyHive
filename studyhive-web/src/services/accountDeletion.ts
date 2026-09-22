@@ -21,7 +21,7 @@ export async function accountDeletionStatus(client = cloudClient) {
   return deletionRequest(client, { action: 'status' })
 }
 
-export async function deleteAccount(password: string, confirmation: string, client = cloudClient, reauthFactory = createReauthClient) {
+export async function deleteAccount(password: string, confirmation: string, client = cloudClient, reauthFactory = createReauthClient, captchaToken?: string) {
   if (!client || !password || confirmation !== 'DELETE') throw new Error('Enter your password and type DELETE to confirm.')
   const profileId = useStore.getState().currentUser?.id
   let changed = false
@@ -35,7 +35,7 @@ export async function deleteAccount(password: string, confirmation: string, clie
     if (owner.error || owner.data?.auth_user_id !== data.user.id) throw new Error('Your account changed. Start again.')
     ensureAccount()
     reauth = reauthFactory()
-    const verified = await reauth.auth.signInWithPassword({ email: data.user.email, password })
+    const verified = await reauth.auth.signInWithPassword({ email: data.user.email, password, ...(captchaToken ? { options: { captchaToken } } : {}) })
     if (verified.error || !verified.data.session || verified.data.user?.id !== data.user.id) throw new Error('Password verification failed. Check your password and retry.')
     ensureAccount()
     const result = await deletionRequest(client, { action: 'delete', confirmation }, verified.data.session.access_token)

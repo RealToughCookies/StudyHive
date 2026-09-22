@@ -47,3 +47,12 @@ test('typed confirmation is required before requesting password verification',as
  await assert.rejects(deleteAccount('password','delete',f.client,()=>{throw new Error('must not run')}),/type DELETE/)
  assert.deepEqual(f.calls,[])
 })
+
+test('account deletion forwards CAPTCHA only to password verification',async()=>{
+ const f=fixture(); let credentials:any
+ const original=f.temporary.auth.signInWithPassword
+ f.temporary.auth.signInWithPassword=async(input:any)=>{credentials=input;return original(input)}
+ await deleteAccount('private-password','DELETE',f.client,()=>f.temporary,'single-use-captcha')
+ assert.equal(credentials.options.captchaToken,'single-use-captcha')
+ assert.equal(JSON.stringify(f.calls).includes('single-use-captcha'),false)
+})

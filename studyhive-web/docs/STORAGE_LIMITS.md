@@ -19,4 +19,14 @@ Local tests execute the real migrations in PGlite and cover backfill, Free/Pro/e
 
 ## Remaining storage work
 
-Retained AI sources currently consume slots until removed. A safe orphan-file cleanup workflow remains needed before broad beta. Never delete solely because a file lacks an attachment row: uploads and active AI jobs can temporarily be unregistered. Per-account limits do not bound total project usage when signup is unrestricted; enrollment controls and provider usage alerts remain launch requirements.
+Retained AI sources currently consume slots until removed. Owner-requested cleanup is now implemented below; its migration/function deployment and hosted verification are pending. Never delete solely because a file lacks an attachment row: uploads and active AI jobs can temporarily be unregistered. Per-account limits do not bound total project usage when signup is unrestricted; enrollment controls and provider usage alerts remain launch requirements.
+
+## Owner-requested unused-upload cleanup (coded; deployment pending)
+
+Settings now offers a separate confirmation before permanently removing unused uploads older than 24 hours. Cleanup retains every object referenced by a saved note attachment and runs for both plans. It refuses to proceed while the owner has a recent pending AI job. It processes at most 50 files per request; retry for further batches or after partial failures.
+
+Apply `20260922010000_upload_cleanup.sql` after the capacity migration, then redeploy `pro-service` and the frontend. The migration itself removes no files. A verified user ID from the function is passed to a server-only inventory RPC, which locks the account while marking candidates. Attachment registration takes a compatible account lock and rejects marked files. Persistent retirement records prevent reused paths from being removed by overlapping cleanup retries. Files are removed through the Storage API, never SQL metadata deletion. Byte removal triggers capacity release. Retirement records cascade with account deletion.
+
+This is deliberate owner-requested cleanup, not an automatic scheduled deletion job. Active browser uploads under 24 hours are preserved. Generated notes are independent of temporary AI sources and remain. A paused attachment save older than 24 hours may lose its unregistered source to a user-requested cleanup; its later registration fails clearly and requires a new upload.
+
+Verify through real Storage: old unused files disappear, saved attachments still download, failed removals can retry, and quota counts match actual inventory. Do not run cleanup against the owner's private workspace just to test it; use disposable fixtures. Scheduled cleanup, provider storage reconciliation and a global project budget remain operational follow-ups.

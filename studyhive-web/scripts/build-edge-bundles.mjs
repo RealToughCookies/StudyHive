@@ -7,4 +7,4 @@ for (const name of ['pro-service', 'stripe-webhook', 'delete-account']) {
     target: 'es2022', external: ['npm:*'],
   })
 }
-console.log('Prepared dashboard modules in dist-edge/. Deploy only after applying the account-deletion migration.')
+console.log('Prepared dashboard modules in dist-edge/. Deploy only after applying the required migrations, including storage limits and upload cleanup. See docs/STORAGE_LIMITS.md.')
