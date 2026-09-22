@@ -12,6 +12,12 @@ Deployed to Cloudflare Pages on 2026-09-21 at https://studyhive-829.pages.dev/. 
 - Hosted sign-in page loads without displaying personal data. HTTPS returned 200 with the configured CSP, framing, referrer, permissions, MIME and noindex headers.
 - On 2026-09-22 the owner reported all four hosted smoke checks passed: existing-account sign-in with notes/classes visible, temporary note persistence after refresh, membership refresh showing the expected plan, and matching data on a phone. These are user-reported results, not independently observed by the agent. Billing remains in test mode; broader hosted acceptance and public-launch review remain pending.
 
+## Launch safeguards deployed 2026-09-22
+
+Commit `0141878` deployed successfully to production (Cloudflare deployment `78333baf-250a-4235-a4f0-cf1f17d00196`). Both storage migrations and the updated `pro-service` are installed. The public sign-in form displayed a successful managed Turnstile verification. Supabase CAPTCHA enforcement remains disabled until the owner enters the matching secret and saves the Auth settings; provider-side acceptance is still pending.
+
+Verification: 107 local Node/React/database tests, 14 Deno tests, production build, live Pro-service preflight 200, unauthenticated cleanup 401 and wrong-origin cleanup 403. Live database inventory showed 20 notes and one file, matching quota count one; no cleanup was executed. Hosted quota concurrency and actual file-removal tests still need disposable fixtures. This deployment keeps Stripe in test mode.
+
 ## Connect the existing repository
 
 Sign into Cloudflare and create a **Pages** application from the existing GitHub repository `RealToughCookies/StudyHive`. Grant access only to this repository when connecting GitHub. The account owner must complete any account creation, terms acceptance or authorization prompts.
@@ -65,4 +71,4 @@ Do not publish the beta broadly until email delivery, storage quotas, abuse cont
 
 ## Rollback
 
-If the frontend deployment fails, restore a known-good Pages deployment. If reverting the origin cutover, restore `APP_ORIGIN=http://127.0.0.1:5173` and the former Auth URL settings together, then verify the local server. No schema migration is required for this hosting setup. The three existing migrations were applied manually; do not replay them.
+If the frontend deployment fails, restore a known-good Pages deployment. If reverting the origin cutover, restore `APP_ORIGIN=http://127.0.0.1:5173` and the former Auth URL settings together, then verify the local server. No schema migration is required for this hosting setup. The five existing migrations were applied manually; do not replay them.
