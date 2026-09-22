@@ -20,3 +20,7 @@ Working defaults for the remaining implementation: text-based PDF, DOCX and TXT 
 3. **Launch completion (export and Free/Pro account deletion tested):** hosted deployment, privacy/terms, quotas and abuse controls, responsive/accessibility review, live multi-account/email/payment checks, backups, monitoring and deployment.
 
 The old local demo remains explicitly selectable. Its local accounts, API-key feature and demo subscription labels are not production authentication, included Pro AI or real billing.
+
+## File capacity implementation — 2026-09-22
+
+Added server-enforced beta file counts (25 Free / 100 active Pro), transactional accounting, and a Settings usage panel. Existing files survive downgrade/overage. Migration and hosted Storage API checks are pending; see STORAGE_LIMITS.md. Orphan cleanup and signup abuse controls remain separate launch work.

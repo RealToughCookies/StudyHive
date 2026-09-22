@@ -6,6 +6,7 @@ import { Save, User, Palette, Bell, Key, Crown, Timer, Moon, Sun, Keyboard } fro
 import { ShortcutConfig, KeyboardShortcut, DEFAULT_SHORTCUTS } from '../../types'
 import ProPanel from '../Subscription/ProPanel'
 import DataExport from './DataExport'
+import FileUsage from './FileUsage'
 import AccountDeletion from './AccountDeletion'
 
 const SettingsPanel = () => {
@@ -210,6 +211,7 @@ const SettingsPanel = () => {
             </div>
           </div>
 
+          {cloudClient && <FileUsage />}
           {cloudClient && <DataExport />}
           {cloudClient && <AccountDeletion />}
 

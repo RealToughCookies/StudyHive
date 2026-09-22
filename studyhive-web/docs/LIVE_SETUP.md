@@ -128,3 +128,7 @@ After the owner deleted disposable profile 7 through StudyHive, a refreshed Stri
 ## Hosted beta preparation — September 21
 
 Prepared a Cloudflare Pages recipe targeting the existing repository’s studyhive-web directory, Node 22 selection, and static response headers. Only public Supabase build configuration belongs on the frontend host. Hosting account connection, deployment, actual HTTPS address and Auth/APP_ORIGIN cutover remain pending. No hosting subscription was purchased, no provider secret was changed, and no live payment mode was enabled.
+
+## Hosted smoke checks — 2026-09-22
+
+StudyHive is deployed at https://studyhive-829.pages.dev/. The owner reported successful existing-account sign-in, existing notes/classes, new-note persistence after refresh, membership refresh and matching phone data. See HOSTED_BETA.md for deployment configuration and independently checked HTTPS headers/origin preflights. Hosted signup/recovery email delivery, payment lifecycle tests, quotas, backups and public-launch work remain outstanding.

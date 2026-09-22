@@ -1,6 +1,16 @@
 # Hosted beta setup
 
-Prepared for Cloudflare Pages; not deployed yet. The frontend is static Vite output. Supabase continues to host authentication, data, private files and Edge Functions. Stripe stays in test mode. This is an owner-testing deployment, not approval to open paid subscriptions to the public.
+Deployed to Cloudflare Pages on 2026-09-21 at https://studyhive-829.pages.dev/. The frontend is static Vite output. Supabase continues to host authentication, data, private files and Edge Functions. Stripe stays in test mode. This is an owner-testing deployment, not approval to open paid subscriptions to the public.
+
+## Deployment record
+
+- Cloudflare project: `studyhive`; repository `RealToughCookies/StudyHive`, branch `main`, initial commit `de71cca`.
+- Automatic non-production branch deployments disabled and verified on 2026-09-22; main auto-deploy remains enabled.
+- Production address: https://studyhive-829.pages.dev/.
+- Supabase Site URL and exact hosted root/recovery redirects are saved. Existing local auth redirects remain.
+- `APP_ORIGIN` now points to `https://studyhive-829.pages.dev`. Pro-service preflight returned HTTP 200 with that exact allowed origin; account-deletion preflight also returned 200.
+- Hosted sign-in page loads without displaying personal data. HTTPS returned 200 with the configured CSP, framing, referrer, permissions, MIME and noindex headers.
+- On 2026-09-22 the owner reported all four hosted smoke checks passed: existing-account sign-in with notes/classes visible, temporary note persistence after refresh, membership refresh showing the expected plan, and matching data on a phone. These are user-reported results, not independently observed by the agent. Billing remains in test mode; broader hosted acceptance and public-launch review remain pending.
 
 ## Connect the existing repository
 
