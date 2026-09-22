@@ -1,6 +1,6 @@
 # Beta file capacity
 
-Implemented in `20260922000000_storage_limits.sql`; not yet applied to the hosted database.
+Applied `20260922000000_storage_limits.sql` and `20260922010000_upload_cleanup.sql` to the hosted database on 2026-09-22; `pro-service` was redeployed with the cleanup action. Read-only verification found 20 notes, 1 stored file, matching file count 1, no cleanup claims, cleanup RLS enabled, and no authenticated-client permission to claim cleanup. No cleanup was executed. Hosted upload/concurrency/physical-removal acceptance remains pending.
 
 Free accounts may retain 25 files; active Pro accounts may retain 100. The existing bucket limit remains 10 MiB per file (the AI form accepts 2 MiB). Thus retained object capacity is bounded at 250 MiB / 1,000 MiB per account, not a promise of pooled byte-based storage. Small and empty files count too. These are adjustable beta defaults, not final paid-plan commitments.
 
@@ -19,9 +19,9 @@ Local tests execute the real migrations in PGlite and cover backfill, Free/Pro/e
 
 ## Remaining storage work
 
-Retained AI sources currently consume slots until removed. Owner-requested cleanup is now implemented below; its migration/function deployment and hosted verification are pending. Never delete solely because a file lacks an attachment row: uploads and active AI jobs can temporarily be unregistered. Per-account limits do not bound total project usage when signup is unrestricted; enrollment controls and provider usage alerts remain launch requirements.
+Retained AI sources currently consume slots until removed. Owner-requested cleanup is now implemented below; its migrations and backend are deployed; hosted verification is pending. Never delete solely because a file lacks an attachment row: uploads and active AI jobs can temporarily be unregistered. Per-account limits do not bound total project usage when signup is unrestricted; enrollment controls and provider usage alerts remain launch requirements.
 
-## Owner-requested unused-upload cleanup (coded; deployment pending)
+## Owner-requested unused-upload cleanup
 
 Settings now offers a separate confirmation before permanently removing unused uploads older than 24 hours. Cleanup retains every object referenced by a saved note attachment and runs for both plans. It refuses to proceed while the owner has a recent pending AI job. It processes at most 50 files per request; retry for further batches or after partial failures.
 

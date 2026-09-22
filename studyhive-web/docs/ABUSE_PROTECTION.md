@@ -1,6 +1,6 @@
 # Signup abuse protection
 
-Turnstile integration is coded and tested but is NOT enabled on the hosted service yet. A widget alone is not an authorization boundary. Supabase Auth must validate tokens server-side so direct requests cannot bypass the form.
+Turnstile integration is coded and tested. On 2026-09-22 a managed widget restricted to `studyhive-829.pages.dev` was created with pre-clearance off, and its public site key was saved in the Pages production build environment. Supabase CAPTCHA enforcement is NOT enabled yet; the matching secret must be entered by the owner after the compatible frontend is deployed. A widget alone is not an authorization boundary. Supabase Auth must validate tokens server-side so direct requests cannot bypass the form.
 
 ## Enable for the hosted beta
 
