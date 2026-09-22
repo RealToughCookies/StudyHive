@@ -2,7 +2,7 @@
 
 Turnstile integration is deployed and Supabase enforcement was verified enabled on 2026-09-22 after the owner entered the secret. The managed widget is restricted to `studyhive-829.pages.dev`, with pre-clearance off. Its public site key is in the Pages production build environment. The hosted sign-in widget displayed Success. Two direct password-sign-in requests for a nonexistent `example.invalid` address were rejected with HTTP 400 / `captcha_failed`: missing token (`no captcha_token found`) and invalid token (`invalid-input-response`). No account or email was created by these checks.
 
-A real hosted sign-in with a fresh verification remains pending, along with signup, recovery, resend, deletion reauthentication, expired/replayed-token and mobile acceptance. Negative checks prove enforcement but do not by themselves prove that the configured secret accepts valid widget tokens.
+The owner subsequently confirmed successful hosted sign-in and notes access after enforcement. Signup, recovery, resend, deletion reauthentication, expired/replayed-token and mobile acceptance remain pending. See `HOSTED_ACCEPTANCE.md`.
 
 ## Enable for the hosted beta
 

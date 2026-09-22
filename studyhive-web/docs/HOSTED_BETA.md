@@ -14,7 +14,7 @@ Deployed to Cloudflare Pages on 2026-09-21 at https://studyhive-829.pages.dev/. 
 
 ## Launch safeguards deployed 2026-09-22
 
-Commit `0141878` deployed successfully to production (Cloudflare deployment `78333baf-250a-4235-a4f0-cf1f17d00196`). Both storage migrations and the updated `pro-service` are installed. The public sign-in form displayed a successful managed Turnstile verification. The owner subsequently enabled Supabase CAPTCHA enforcement. Missing and invalid tokens were both rejected with HTTP 400 / `captcha_failed`; a real sign-in with fresh verification and the broader auth acceptance checks remain pending.
+Commit `0141878` deployed successfully to production (Cloudflare deployment `78333baf-250a-4235-a4f0-cf1f17d00196`). Both storage migrations and the updated `pro-service` are installed. The public sign-in form displayed a successful managed Turnstile verification. The owner subsequently enabled Supabase CAPTCHA enforcement. Missing and invalid tokens were both rejected with HTTP 400 / `captcha_failed`; the owner subsequently confirmed sign-in and notes access. Broader auth acceptance checks remain pending (see HOSTED_ACCEPTANCE.md).
 
 Verification: 107 local Node/React/database tests, 14 Deno tests, production build, live Pro-service preflight 200, unauthenticated cleanup 401 and wrong-origin cleanup 403. Live database inventory showed 20 notes and one file, matching quota count one; no cleanup was executed. Hosted quota concurrency and actual file-removal tests still need disposable fixtures. This deployment keeps Stripe in test mode.
 

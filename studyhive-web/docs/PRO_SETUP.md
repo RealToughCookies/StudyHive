@@ -25,9 +25,9 @@ The Pro migration and both Edge Functions were deployed to the connected Supabas
 
 Generated plain text is escaped before entering the rich-text editor. Documents have no tools or access to other accounts; embedded instructions are treated as study content. The provider extracts file text. Scans/handwriting are not supported by this product flow; file size alone does not guarantee a page/token bound, so model context limits and provider spending controls remain important.
 
-Successful imports remove their temporary upload. Failed/abandoned uploads can remain under the private `<user_id>/ai/` prefix; owner-requested cleanup is now coded on the launch branch (see STORAGE_LIMITS.md), with deployment and hosted verification still pending. A process crash leaves a pending reservation until another generation expires it after 10 minutes. Do not automatically retry paid provider calls. A paid response lost before artifact persistence can still incur operator cost without using the student's allowance.
+Successful imports remove their temporary upload. Failed/abandoned uploads can remain under the private `<user_id>/ai/` prefix; owner-requested cleanup is now deployed (see STORAGE_LIMITS.md), with hosted removal verification pending. A process crash leaves a pending reservation until another generation expires it after 10 minutes. Do not automatically retry paid provider calls. A paid response lost before artifact persistence can still incur operator cost without using the student's allowance.
 
-Public hosting, production SMTP, automated backups/monitoring and live subscription launch remain pending. Account export is implemented and owner-confirmed; account deletion is implemented locally but needs the deployment and disposable-account checks in `ACCOUNT_DELETION.md`. The existing personal-note recovery is complete; a general local-workspace importer remains future work.
+Public hosting, account export and Free/Pro account deletion are deployed and have recorded checks in `LIVE_SETUP.md`. Production SMTP, automated backups/monitoring and live subscription launch remain pending. The existing personal-note recovery is complete; a general local-workspace importer remains future work.
 
 ## Verification commands
 
@@ -38,7 +38,7 @@ npx --yes deno check supabase/functions/pro-service/index.ts supabase/functions/
 npx --yes deno test --allow-env supabase/functions/pro-service/handler.test.ts supabase/functions/stripe-webhook/handler.test.ts supabase/functions/delete-account/handler.test.ts
 ```
 
-The Deno tests use mocked provider fetches and no network permission. PostgreSQL tests apply all three real migrations and exercise database roles, ownership, scheduling, quota and billing leases.
+The Deno tests use mocked provider fetches and no network permission. PostgreSQL tests cover the five real migrations and exercise database roles, ownership, scheduling, quota and billing leases.
 
 ## Provider references
 
