@@ -59,3 +59,15 @@ secrets/
 
 # Personal study data exports
 StudyHive-export-*.json
+
+# Operator backups and private staging
+backups/
+*.dump
+*.tar.age
+*.tar.age.partial
+*.restore-inventory.txt
+*.database-restore.json
+*.database-restore.json.partial
+.studyhive-capture-*/
+.studyhive-verify-*/
+__pycache__/

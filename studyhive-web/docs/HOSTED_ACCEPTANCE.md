@@ -10,7 +10,11 @@ Use https://studyhive-829.pages.dev/, not localhost or a deployment-preview URL.
 
 - Live read-only storage health check returned `stored_files=1`, `counted_files=1`, and zero for all five anomaly columns. This checks metadata only; it does not establish file-byte recoverability.
 
-## Next: disposable-account authentication
+## Owner-reported checks on 2026-09-23
+
+The owner reported password recovery/new-password sign-in working, uploads blocked while over the Free limit, deletion releasing capacity, an upload succeeding at 24 files and being rejected at 25, and existing attachments downloading. The storage test used the owner's Outlook workspace after explicit authorization to cancel Pro; it was not an empty disposable account. Stripe sandbox cancellation and the resulting Free tier were independently verified, with all 21 notes and 26 files still present immediately after downgrade. Later fixture removals and uploads were performed by the owner; their outcomes are user-reported, not independent API/concurrency checks.
+
+## Authentication checklist (reference)
 
 1. Use an empty disposable account whose inbox the owner controls. Do not delete or reset the main account for testing.
 2. If the test account does not exist, create it on the hosted site, complete verification, and follow the newest confirmation email. Confirm the returned address is the hosted site and sign in.
